@@ -1,0 +1,154 @@
+package com.gvs.idusapp;
+
+import java.util.Date;
+
+import com.gvs.busquedas.BusquedasCierreDeDia;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+
+import android.app.AlertDialog;
+import android.content.ContentValues;
+import android.content.DialogInterface;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.TextView;
+
+public class CloseDayActivity extends Fragment {
+	private TextView txt_cantidad,txt_venta,txt_no_venta,txt_no_enviado,txt_efectividad_visita,txt_efectividad_ruta;
+	private Button btn_grabar;
+	private int lEmpresa=0;
+	private int lVendedor=0;
+	private Funciones funcion = new Funciones();
+	private int cantidad = 0;
+	private int ventas = 0;
+	private int noVentas = 0;
+	private int noEnviados = 0;
+	private double cobGral =0;
+	private double cobEfe=0;
+	
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,Bundle savedInstanceState) {
+		View V = inflater.inflate(R.layout.activity_close_day, container, false);
+		
+		txt_cantidad = (TextView) V.findViewById(R.id.txt_cantidad_visita);		
+		txt_venta = (TextView) V.findViewById(R.id.txt_cierre_venta);
+		txt_no_venta = (TextView) V.findViewById(R.id.txt_cierre_no_venta);
+		txt_no_enviado = (TextView)V.findViewById(R.id.txt_cierre_no_enviados);
+		txt_efectividad_visita = (TextView) V.findViewById(R.id.txt_efectividad_visita);
+		txt_efectividad_ruta = (TextView) V.findViewById(R.id.txt_efectividad_ruta);
+		btn_grabar = (Button) V.findViewById(R.id.btn_grabar_cierre);
+		Bundle bun =getActivity().getIntent().getExtras();
+		int dia = bun.getInt("DIA");
+		lEmpresa=bun.getInt("EMPRESA");
+		lVendedor=bun.getInt("VENDEDOR");
+		BusquedasCierreDeDia cieDia = new BusquedasCierreDeDia(getActivity(), lEmpresa, lVendedor);
+		try {
+			cantidad = cieDia.devolverCantidadClientesDelDia(dia, lVendedor);
+			ventas = cieDia.devolverCantidadVendidos(dia);
+			noVentas = cieDia.devolverCantidadNoVendidos(dia);
+			noEnviados = cieDia.devolverCantidadNoEnviados(dia);
+			txt_cantidad.setText(String.valueOf(cantidad));
+			txt_venta.setText(String.valueOf(ventas));
+			txt_no_venta.setText(String.valueOf(noVentas));
+			txt_no_enviado.setText(String.valueOf(noEnviados));
+			cobGral = (double)(ventas* 100)/(ventas + noVentas);
+			cobEfe = (double)(ventas*100)/cantidad;
+			txt_efectividad_visita.setText(funcion.formatDecimal(cobGral,2)+" %");
+			txt_efectividad_ruta.setText(funcion.formatDecimal(cobEfe,2)+" %");			
+		} catch (Exception e) {
+			e.printStackTrace();
+			funcion.MostrarMensajeAceptar(getActivity(), "ERROR", e.getMessage());
+		}
+		 
+		btn_grabar.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				if (noEnviados>0){
+					eleccion("NO ENVIADOS", "Hay pedidos sin enviar.¿Está seguro de realizar el cierre de día?", 1);
+				} else {
+					eleccion("COFIRME", "¿Está seguro de realizar el cierre del día?", 2);
+				}				
+			}
+		});
+		
+		return V;
+	}
+	
+	private void grabarFINDEDIA(){
+		ContentValues contFD = new ContentValues();
+		Date fecha = new Date();
+		contFD.put("CODIGOVENDEDOR", lVendedor);
+		contFD.put("FECHA",fecha.getTime());
+		contFD.put("CLIENTESDELDIA", cantidad);
+		contFD.put("CLIENTESATENDIDOS", ventas);
+		contFD.put("CLIENTESNOATENDIDOS", noVentas);
+		contFD.put("PEDIDOSSINENVIAR",noEnviados);
+		contFD.put("MOTIVOSSINENVIAR", 0);
+		contFD.put("COBGENERAL", cobGral);
+		contFD.put("COBEFECTIVA",cobEfe);
+		contFD.put("ESTADO", 0);
+		BaseDeDatos baseDeDatos = new BaseDeDatos(getActivity(), funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		try {
+			String Sql = "";
+			Cursor cur;
+			db.beginTransaction();
+			Sql = "SELECT * FROM FINESDEDIA WHERE CODIGOVENDEDOR=" + lVendedor + " AND FECHA=" + fecha.getTime();
+			cur = db.rawQuery(Sql, null);
+			if (cur.moveToNext()) {
+				db.update("FINESDEDIA", contFD, "CODIGOVENDEDOR=" + lVendedor + " AND FECHA=" + fecha.getTime(), null);
+			} else {
+				db.insert("FINESDEDIA", null, contFD);
+			}
+			db.setTransactionSuccessful();
+		} catch (Exception e) {
+			e.printStackTrace();
+			funcion.MostrarMensajeAceptar(getActivity(), "ERROR", e.getMessage());
+		} finally {
+			db.endTransaction();
+			
+		}
+		
+	}
+	
+	public void eleccion(String titulo,String cadena,final int tipo){
+        AlertDialog.Builder alertbox = new AlertDialog.Builder(getActivity());
+        alertbox.setTitle(titulo);
+        alertbox.setMessage(cadena);
+        alertbox.setPositiveButton("Si", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface arg0, int arg1) {
+                mensaje(true,tipo);
+            }
+        });	 
+        alertbox.setNegativeButton("No", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface arg0, int arg1) {
+                mensaje(false,tipo);
+            }
+        });
+        alertbox.show();
+	}	
+	
+	private void mensaje(boolean respuesta,int tipo){
+		if (respuesta) {
+			switch (tipo) {
+			case 1:
+				grabarFINDEDIA();
+				break;
+			case 2:
+				grabarFINDEDIA();
+				break;
+			default:
+				break;
+			}
+		} else {
+			
+		}
+	}
+}

@@ -1,0 +1,161 @@
+package com.gvs.idusapp;
+
+import java.util.ArrayList;
+import java.util.List;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+import com.gvs.utilidades.Objetive;
+import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+import android.widget.TextView;
+
+public class ObjetiveActivity extends Fragment {
+	private ListView list;
+	private Bundle bun;
+	private Funciones funcion;
+	private int vendedor, dia;
+	private List<Objetive> lista;
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,Bundle savedInstanceState) {
+		View V = inflater.inflate(R.layout.activity_objetive, container, false);
+		return V;
+	}
+	@Override
+	public void onActivityCreated(Bundle state) {
+		super.onActivityCreated(state);
+		bun = getActivity().getIntent().getExtras();
+		list = (ListView) getActivity().findViewById(R.id.lista_objetivos);
+		funcion = new Funciones();
+		dia = bun.getInt("DIA");
+		vendedor = bun.getInt("VENDEDOR");	
+		buscarObjetivos();
+		mostrarLista();
+		realizarOperacion();
+	}
+	
+	@Override
+	public void onResume() {	
+		bun = getActivity().getIntent().getExtras();
+		list = (ListView) getActivity().findViewById(R.id.lista_objetivos);
+		funcion = new Funciones();
+		dia = bun.getInt("DIA");
+		vendedor = bun.getInt("VENDEDOR");
+		buscarObjetivos();
+		mostrarLista();
+		realizarOperacion();
+		super.onResume();
+	}
+	
+	public void buscarObjetivos(){
+		lista=new ArrayList<Objetive>();
+		BaseDeDatos baseDeDatos = new BaseDeDatos(getActivity(),funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		Cursor cur = null;
+		try {
+			String Sql = "SELECT C.CODIGO,C.NOMBRE,O.OBJ_ACT,O.CAN_VIS,O.PORC FROM CLIENTES AS C "
+					+ "INNER JOIN VISITAS AS V ON C.CODIGO=V.CODIGOCLIENTE "
+					+ "INNER JOIN OBJXVISITA AS O ON C.CODIGO=O.CODIGOCLIENTE "
+					+ "WHERE C.CODIGOVENDEDOR="+ vendedor+ " AND SUBSTR(V.DIAS,"
+					+ dia+ ",1)='"+ dia+ "' AND C.CODIGOVENDEDOR=" + vendedor + " AND HAB=1";
+			cur = db.rawQuery(Sql, null);
+			if (cur.getCount() > 0) {
+				while (cur.moveToNext()) {
+					Objetive objetive=new Objetive();
+					double objXVisita = 0;
+					if (cur.getDouble(cur.getColumnIndex("CAN_VIS")) > 0) {
+						objXVisita = cur.getDouble(cur.getColumnIndex("OBJ_ACT"))/ cur.getDouble(cur.getColumnIndex("CAN_VIS"));
+					}
+					objetive.setNombre(String.valueOf(cur.getInt(cur.getColumnIndex("CODIGO"))+ "-"+ cur.getString(cur.getColumnIndex("NOMBRE"))));
+					objetive.setActual(" Objetivo actual=$"+ funcion.formatDecimal(cur.getDouble(cur.getColumnIndex("OBJ_ACT")),2));
+					objetive.setVisita(" Cantidad de visitas="+ cur.getDouble(cur.getColumnIndex("CAN_VIS")));
+					objetive.setObjetivo(" Objetivo por visita=$" + funcion.formatDecimal(objXVisita,2));
+					objetive.setPorcentaje(" Avance="+ cur.getDouble(cur.getColumnIndex("PORC"))+"%");
+				//	datum.put("DAT01", String.valueOf(cur.getInt(cur.getColumnIndex("CODIGO"))+ "-"+ cur.getString(cur.getColumnIndex("NOMBRE"))));
+					//datum.put("DAT02","Actual=$"+ funcion.formatDecimal(cur.getDouble(cur.getColumnIndex("OBJ_ACT")),2)
+						//			+ " Visita="+ cur.getDouble(cur.getColumnIndex("CAN_VIS"))+ " Objetivo=$" + funcion.formatDecimal(objXVisita,2)
+							//		+ " Porcentaje="+ cur.getDouble(cur.getColumnIndex("PORC"))+ "% ");
+					lista.add(objetive);
+				}
+				db.close();
+			//	adapter=new  SimpleAdapter(getActivity(), lista, android.R.layout.simple_list_item_2, 
+				//		new String[] {"DAT01","DAT02"}, new int[] {android.R.id.text1,android.R.id.text2});			
+				//list.setAdapter(adapter);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private void mostrarLista() {
+		if(lista!=null){
+		ArrayAdapter<Objetive> adapter = new MyListAdapter();
+		list = (ListView)getActivity().findViewById(R.id.lista_objetivos);
+		list.setAdapter(adapter);
+		}
+	}
+	
+	private void realizarOperacion() {
+		list = (ListView)getActivity().findViewById(R.id.lista_objetivos);
+		list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view,int position, long id) {
+				Objetive objetive = lista.get(position);
+				bun.putString("DATO01", objetive.getNombre());
+				String[] dato01 = objetive.getNombre().toString().split("-");
+				bun.putInt("CODIGOCLIENTE", Integer.parseInt(dato01[0].trim()));
+				Intent intent = new Intent(getActivity(),ClientOperationActivity.class);
+				intent.putExtras(bun);
+				startActivity(intent);
+			}
+		});
+	}
+	
+	private class MyListAdapter extends ArrayAdapter<Objetive> {
+
+		public MyListAdapter() {
+			super(getActivity(), R.layout.activity_objetive, lista);
+		}
+
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) {
+			View view = convertView;
+			if (view == null) {
+				//
+				view = getActivity().getLayoutInflater().inflate(R.layout.row_objetive, parent,false);
+			}
+			Objetive objetive = lista.get(position);
+			//ImageView image_operation = (ImageView) view.findViewById(R.id.img_estado_cliente);
+			//image_operation.setImageResource(order.getIcon());
+
+			TextView lbl_nombre = (TextView) view.findViewById(R.id.lbl_nombre_cliente);
+			lbl_nombre.setText(objetive.getNombre());
+
+			TextView lbl_actual = (TextView) view.findViewById(R.id.lbl_actual);
+			lbl_actual.setText(objetive.getActual());
+			
+			TextView lbl_visita = (TextView) view.findViewById(R.id.lbl_cantidad_visita);
+			lbl_visita.setText(objetive.getVisita());
+			
+			TextView lbl_objetivo = (TextView) view.findViewById(R.id.lbl_objetivo);
+			lbl_objetivo.setText(objetive.getObjetivo());
+
+			TextView lbl_porcentaje = (TextView) view.findViewById(R.id.lbl_porcentaje);
+			lbl_porcentaje.setText(objetive.getPorcentaje());
+
+
+			return view;
+		}
+
+	}
+
+	
+
+}

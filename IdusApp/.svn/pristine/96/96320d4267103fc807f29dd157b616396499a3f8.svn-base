@@ -1,0 +1,270 @@
+package com.gvs.idusapp;
+
+import java.util.ArrayList;
+import java.util.List;
+import com.gvs.busquedas.BusquedaClientes;
+import com.gvs.busquedas.BusquedaUsuario;
+import com.gvs.entidades.Client;
+import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.content.Intent;
+import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.EditText;
+import android.widget.Filter;
+import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.TextView;
+import android.widget.Toast;
+
+public class ClientActivity extends Activity {
+	
+	private ListView list_view;
+	private EditText txt_filtro;
+	private RadioGroup radio_group;
+	private RadioButton radio_nombre,radio_direccion,radio_visita;
+	private int lVendedor,dia;
+	private Bundle bun;
+	private List<Client> list;
+	private BusquedaUsuario controladorUsuario;
+	private BusquedaClientes busquedaCliente;
+	private ArrayAdapter<Client> adapter ;
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_client);
+		try{
+			list_view = (ListView) findViewById(R.id.lista_clientes);
+			txt_filtro=(EditText)findViewById(R.id.txt_filtro);
+			radio_group = (RadioGroup) findViewById(R.id.radio_tipo_texto);
+			radio_nombre = (RadioButton) findViewById(R.id.radio_tipo_numerico);
+			radio_direccion = (RadioButton) findViewById(R.id.radio_tipo_alfa);
+			radio_visita = (RadioButton) findViewById(R.id.radio_detalle);
+			
+			bun = getIntent().getExtras();
+			controladorUsuario = new BusquedaUsuario();
+			busquedaCliente=new BusquedaClientes(this);
+			dia = bun.getInt("DIA");
+			lVendedor = bun.getInt("VENDEDOR");
+			BuscarClientes(dia, 0);
+			mostrarLista();
+			realizarOperacion();
+			
+			radio_group.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+						@Override
+						public void onCheckedChanged(RadioGroup group, int checkedId) {
+							if (radio_nombre.isChecked() == true) {
+								BuscarClientes(dia, 1);
+								mostrarLista();
+							} else if (radio_direccion.isChecked() == true) {
+								BuscarClientes(dia, 2);
+								mostrarLista();
+							} else if (radio_visita.isChecked() == true) {
+								BuscarClientes(dia, 0);
+								mostrarLista();
+							}
+						}
+			});
+			
+			txt_filtro.addTextChangedListener(new TextWatcher() {
+
+				@Override
+				public void onTextChanged(CharSequence s, int start, int before,int count) {
+					adapter.getFilter().filter(s.toString());
+					
+				}
+
+				@Override
+				public void beforeTextChanged(CharSequence s, int start, int count,
+						int after) {
+					
+				}
+
+				@Override
+				public void afterTextChanged(Editable s) {
+				
+
+				}
+			});
+			
+		}catch(Exception ex){
+			Toast toast =Toast.makeText(this,"Bug en la busqueda de clientes", Toast.LENGTH_SHORT);
+			toast.show();
+		}
+		
+	}
+	
+	@Override
+	protected void onRestart() {
+		try{
+			BuscarClientes(dia, 0);
+			radio_visita.setChecked(true);
+			mostrarLista();
+		}catch(Exception ex){
+			Toast toast =Toast.makeText(this,"Bug en la busqueda de clientes", Toast.LENGTH_SHORT);
+			toast.show();
+		}
+		super.onRestart();
+	}
+
+	private void BuscarClientes(int dia, int sOrden) {
+		try{
+			list=busquedaCliente.buscarClientes(dia, sOrden, lVendedor);
+		}catch(Exception ex){
+			Toast toast =Toast.makeText(this,"Bug al listar clientes", Toast.LENGTH_SHORT);
+			toast.show();
+		}
+	}
+
+	private void mostrarLista() {
+		if(list!=null){
+			adapter = new MyListAdapter(list);
+			list_view.setAdapter(adapter);
+		}
+	}
+
+	private void realizarOperacion() {
+		list_view.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view,int position, long id) {
+				try{
+					Client client = list.get(position);
+					bun.putString("NOMBRECLIENTE", client.getName());
+					bun.putInt("CODIGOCLIENTE", client.getCodigo());
+					Intent intent = new Intent(ClientActivity.this,ClientOperationActivity.class);
+					intent.putExtras(bun);
+					startActivity(intent);
+				}catch(Exception ex){
+					Toast toast =Toast.makeText(getApplicationContext(),"Bug en el cliente seleccionado", Toast.LENGTH_SHORT);
+					toast.show();
+				}
+			}
+		});
+	}
+
+	private class MyListAdapter extends ArrayAdapter<Client> {
+		private FiltroPasajero filter;
+		private List<Client> lista_original;
+		private ArrayList<Client> lista_filtro;
+		public MyListAdapter(List<Client> countryList) {
+			super(ClientActivity.this, R.layout.activity_client, list);
+			this.lista_original = new ArrayList<Client>();
+			this.lista_original.addAll(countryList);
+			this.lista_filtro = new ArrayList<Client>();
+			this.lista_filtro.addAll(countryList);
+		}
+		
+		@Override
+		public Filter getFilter() {
+			if (filter == null) {
+				filter = new FiltroPasajero();
+			}
+			return filter;
+		}
+
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) {
+			View view = convertView;
+			ViewHolder holder;
+			if (view == null) {
+				view = getLayoutInflater().inflate(R.layout.row_client, parent,false);
+				holder = new ViewHolder();
+				holder.image_operation= (ImageView) view.findViewById(R.id.img_estado_cliente);
+				holder.lbl_name= (TextView) view.findViewById(R.id.lbl_nombre_cliente);
+				holder.lbl_address=(TextView) view.findViewById(R.id.lbl_direccion_cliente);
+				view.setTag(holder);
+			}else{
+				holder = (ViewHolder) view.getTag();
+			}
+			Client client = list.get(position);
+			holder.image_operation.setImageResource(client.getIcon());
+			holder.lbl_name.setText(client.getCodigo()+" - "+client.getName());
+			holder.lbl_address.setText(client.getAddress());
+			return view;	
+		}
+		
+		@SuppressLint("DefaultLocale")
+		private class FiltroPasajero extends Filter {
+
+			@Override
+			protected FilterResults performFiltering(CharSequence constraint) {
+
+				constraint = constraint.toString().toLowerCase();
+				FilterResults result = new FilterResults();
+				if (constraint != null && constraint.toString().length() > 0) {
+					ArrayList<Client> itemsFiltrados = new ArrayList<Client>();
+					
+					for (int i = 0, l = lista_original.size(); i < l; i++) {
+						Client country = lista_original.get(i);
+							if (country.getName().toString().toLowerCase().contains(constraint))
+								itemsFiltrados.add(country);
+					}
+					result.count = itemsFiltrados.size();
+					result.values = itemsFiltrados;
+				} else {
+					synchronized (this) {
+						result.values = lista_original;
+						result.count = lista_original.size();
+					}
+				}
+				return result;
+			}
+			
+			@SuppressWarnings("unchecked")
+			@Override
+			protected void publishResults(CharSequence constraint,FilterResults results) {
+				lista_filtro = (ArrayList<Client>) results.values;
+				notifyDataSetChanged();
+				clear();
+				for (int i = 0, l = lista_filtro.size(); i < l; i++)
+					add(lista_filtro.get(i));
+				notifyDataSetInvalidated();
+			}
+		}
+		
+	}
+	
+	static class ViewHolder {
+		ImageView image_operation;
+		TextView lbl_name;
+		TextView lbl_address;
+	}
+	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.client, menu);
+		return true;
+	}
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		int id = item.getItemId();
+		if (id == R.id.clientes_mapa) {
+			Intent intent = new Intent(ClientActivity.this, ClientMapActivity.class);
+			intent.putExtras(bun);
+			startActivity(intent);
+		}else if(id == R.id.cerrar_sesion){
+			startActivity(new Intent(getBaseContext(), MainActivity.class)
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
+			controladorUsuario.cerrarSesion(this);
+			finish();
+		}else if(id == R.id.sincronizar){
+			Intent i = new Intent(this, SyncActivity.class);
+			bun.putString("SINCRONIZACION","GENERAL");
+			i.putExtras(bun);
+			startActivity(i);
+		}
+		return super.onOptionsItemSelected(item);
+	}
+
+}

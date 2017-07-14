@@ -1,0 +1,53 @@
+package com.gvs.conectoras;
+
+import java.io.DataInputStream;
+import java.io.IOException;
+import android.content.Context;
+import android.database.sqlite.SQLiteDatabase;
+import com.gvs.entidades.Configuracion;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+
+public class ConectorControlDeuda extends ConectorGeneral {
+
+	private int empresa;
+	private Context conte;
+
+	public ConectorControlDeuda(Configuracion conf,int empresa,Context context) {
+		super(conf);
+		this.empresa=empresa;
+		conte = context;
+
+	}
+
+	@Override
+	protected String CompletarURL() {
+		return "buscarControles?empresa="+empresa;
+	}
+
+	@Override
+	protected void procesarRespuesta(DataInputStream in) {
+		Configuracion configuracion=new  Configuracion();
+		Funciones funcion = new Funciones();
+		try {
+			configuracion.setAiuds(in.readInt());
+			configuracion.setControl_deuda(in.readInt());
+			configuracion.setDia_contol((in.readInt()));
+
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte,funcion.BaseDeDatos(), null, funcion.Version());
+			final SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			String Sql = "UPDATE CONFIGURACION SET AIDUS="+ configuracion.getAiuds()+",CONTROLDEUDA="+configuracion.getControl_deuda()+",DIASCONTROL="+configuracion.getDia_contol();
+			db.execSQL(Sql);
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				in.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+}

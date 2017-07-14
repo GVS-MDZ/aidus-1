@@ -1,0 +1,45 @@
+package com.gvs.conectoras;
+
+import java.io.DataInputStream;
+import android.content.Context;
+import com.gvs.busquedas.BusquedasCierreDeDia;
+import com.gvs.entidades.CierresDeDia;
+import com.gvs.entidades.Configuracion;
+
+public class ConectorFinDeDia extends ConectorGeneral{
+	
+	private int lEmpresa;
+	private Context conte;
+	private CierresDeDia cierreDia;
+	private BusquedasCierreDeDia busquedaCierreDia;
+	
+	public ConectorFinDeDia(Configuracion conf, Context cont, int empresa, CierresDeDia cierre){
+		super(conf);
+		conte=cont;
+		lEmpresa=empresa;
+		cierreDia=cierre;
+	}
+
+	@Override
+	protected String CompletarURL() throws Exception {
+		String strUrl = "altaFinDeDia?empresa=" + lEmpresa + "&vendedor=" + cierreDia.getCodigoVendedor() +
+				"&fecha=" + cierreDia.getFecha() + "&deldia=" + cierreDia.getClientesDelDia() + 
+				"&atendidos=" + cierreDia.getClientesAtendidos() + "&noatendidos=" + cierreDia.getClientesNoAtendidos() +
+				"&pedidos=" + cierreDia.getPedidosSinEnviar() + "&motivos=0&general=" + cierreDia.getCobGeneral() +
+				"&efectiva=" + cierreDia.getCobEfectiva() + "&estado=" + cierreDia.getEstado();
+		return strUrl;
+	}
+
+	@Override
+	protected void procesarRespuesta(DataInputStream in)throws Exception {
+		try {
+			busquedaCierreDia=new BusquedasCierreDeDia(conte);
+			busquedaCierreDia.modificarCierreDiaConector(cierreDia);
+		} catch (Exception e) {
+			throw new Exception(e.getMessage());
+		}finally{
+			in.close();
+		}
+	}
+	}
+	

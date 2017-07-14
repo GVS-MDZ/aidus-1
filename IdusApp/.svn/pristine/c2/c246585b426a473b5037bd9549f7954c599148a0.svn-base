@@ -1,0 +1,104 @@
+package com.gvs.conectoras;
+
+import java.io.DataInputStream;
+import java.util.Collection;
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.sqlite.SQLiteDatabase;
+
+import com.gvs.controladores.ControladorPedido;
+import com.gvs.entidades.Configuracion;
+import com.gvs.entidades.ItemPedido;
+import com.gvs.entidades.Pedido;
+import com.gvs.exceptiones.ConectorException;
+import com.gvs.exceptiones.ExceptionPedido;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+
+
+
+public class ConectorPedido extends ConectorGeneral{
+
+	int nVendedor;
+	Pedido pedido;
+	Context conte;
+	int lEmpresa;
+	int lVendedor;
+	private Funciones funcion = new Funciones();
+	
+	public ConectorPedido(Configuracion conf, Context cont, Pedido pedidoOri,int empresa, int vendedor) {
+		super(conf);
+		conte=cont;
+		pedido=pedidoOri;
+		lEmpresa=empresa;
+		lVendedor=vendedor;
+	}
+
+	@Override
+	protected String CompletarURL() throws ConectorException {
+		String cuerpo="";
+		ControladorPedido trbPedidos = new ControladorPedido(conte);
+		try {
+			Collection<ItemPedido> items = trbPedidos.buscarItemsPorPedido(pedido.getNumero());
+			for (ItemPedido item: items){
+				if (cuerpo.equals("")){
+					cuerpo= item.getNumero() +";"+ item.getItem() + ";" + item.getCodigo() 
+							+ ";" + item.getCantidad() + ";" + item.getPrecio() + ";" + item.getDescuento();
+				} else {
+					cuerpo = cuerpo + "|" + item.getNumero() +";"+ item.getItem() + ";" + item.getCodigo() 
+							+ ";" + item.getCantidad() + ";" + item.getPrecio() + ";" + item.getDescuento();
+				}
+			}
+			String observacion="";
+			if(pedido.getObservacion().equals(" ")){
+				observacion= pedido.getObservacion().replace("", "%20");
+			}else{
+				 observacion=pedido.getObservacion();
+			}
+			String strURL ="insertarPedidosAndroid_IV?codigoEmpresa=" + lEmpresa + "&numeroOriginal=" + pedido.getNumero() + "&" +
+			"fecha=" + pedido.getFecha() + "&avance=" + pedido.getAvance() + "&codigoVendedor=" + pedido.getCodigoVendedor() + 
+			"&codigoCliente="+ pedido.getCodigoCliente() + "&cantidadItem=" + pedido.getCantidadItems() + 
+			"&lugar=1&estado=0&internet=" + pedido.getInternet() + "&latitud=" + pedido.getLatitud() +
+			"&longitud=" + pedido.getLongitud() + "&precision=" + pedido.getPrecision() + "&proveedor=" + pedido.getProvee() +
+			"&obs=" + observacion + "&fechaEntrega="+ pedido.getFechaEntrega() +
+			"&itemsCuerpo=" + cuerpo;
+			return strURL;
+		} catch (ExceptionPedido e) {
+			e.printStackTrace();
+			throw new ConectorException(e.getMessage());
+		}
+	}
+
+	@Override
+	protected void procesarRespuesta(DataInputStream in)throws ConectorException {
+		int tipoDeDato=0;		
+		try {
+			while (true){
+				BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+				final SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+				ContentValues cont = new ContentValues();
+				tipoDeDato = in.readInt();
+				if (tipoDeDato==1099){
+					break;				
+				}
+				if (tipoDeDato==1){
+					cont.clear();
+					int numeroOriginal = in.readInt();
+					int numerFinal=in.readInt();
+					cont.put("NUMEROFINAL", numerFinal);
+					long fechaEnviado=in.readLong();
+					cont.put("FECHAENVIADO", fechaEnviado);
+					cont.put("ESTADO",1);
+					db.update("PEDIDOSCABECERA", cont, "NUMERO=" + numeroOriginal + " AND (ESTADO=12 OR ESTADO=11)", null);
+					cont.clear();
+					cont.put("FECHAENVIADO", fechaEnviado);
+					cont.put("ESTADO",1);
+					db.update("PEDIDOSCUERPO", cont, "NUMERO=" + numeroOriginal + " AND (ESTADO=12 OR ESTADO=11)", null);
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new ConectorException(e.getMessage());
+		}
+	}
+	}

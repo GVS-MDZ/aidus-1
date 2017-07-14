@@ -1,0 +1,136 @@
+package com.gvs.idusapp;
+
+import java.util.Calendar;
+
+//import com.gvs.controladores.ControladorSincronizador;
+import com.gvs.controladores.ControladorUsuario;
+//import com.gvs.entidades.Usuario;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+import android.app.Activity;
+import android.content.ContentValues;
+import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+
+public class MainActivity extends Activity {
+	private Button btn_ingresar;
+	final Funciones funciones = new Funciones();
+	private ControladorUsuario controladorUsuario;
+	//private ControladorSincronizador controladorSincronizador;
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_main);
+		btn_ingresar = (Button) findViewById(R.id.btn_ingresar);
+		controladorUsuario = new ControladorUsuario();
+		//controladorSincronizador = new ControladorSincronizador();
+		BaseDeDatos baseDeDatos = new BaseDeDatos(this, funciones.BaseDeDatos(), null, funciones.Version());
+
+		//verifico si existe el usuario administrator
+		final SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		if (db!=null){
+			try{
+				String sql = "SELECT NOMBRE,PASS FROM USUARIO WHERE CODIGO=1";
+				Cursor usuCur = db.rawQuery(sql, null);
+				db.beginTransaction();
+				if (usuCur.moveToNext()){
+					ContentValues cont = new ContentValues();
+					String pass=PassAdministrator();
+					cont.put("PASS",pass);
+					db.update("USUARIO", cont, "CODIGO=1",null);				
+				} else {
+					ContentValues cont = new ContentValues();
+					cont.put("CODIGO", 1);
+					cont.put("NOMBRE", "administrator");
+					cont.put("PASS",PassAdministrator());
+					//cont.put("TIPO","administrador");
+					db.insert("USUARIO", null,cont);
+				}
+				db.setTransactionSuccessful();
+			} finally {
+				db.endTransaction();
+			}
+		}
+		
+		btn_ingresar.setOnClickListener(new OnClickListener() {
+						
+			@Override
+			public void onClick(View v) {
+				if (db!=null){
+					String sql = "SELECT NOMBRESRV FROM CONFIGURACION";
+					Cursor cur = db.rawQuery(sql, null);
+					if (cur.moveToNext()) {
+						/*Usuario usuario = controladorUsuario.buscarUsuarioLogueado(MainActivity.this);
+						if (usuario != null) {
+							Bundle bun = new Bundle();
+							bun.putInt("EMPRESA", usuario.getEmpresa());
+							bun.putInt("VENDEDOR", usuario.getCodigo());								
+							if (controladorSincronizador.comprobarSync(MainActivity.this, "T",usuario.getEmpresa(),usuario.getCodigo())) {
+								Intent intent = new Intent(MainActivity.this,WorkDayActivity.class);
+								intent.putExtras(bun);
+								startActivity(intent);
+							} else {
+								Intent intent = new Intent(MainActivity.this,SyncActivity.class);
+								bun.putString("SINCRONIZACION", "INICIO");
+								intent.putExtras(bun);
+								startActivity(intent);
+							}
+						} else {
+							Intent intent = new Intent(MainActivity.this, LoginActivity.class);	
+							startActivity(intent);
+						}*/
+						Intent intent = new Intent(MainActivity.this, LoginActivity.class);	
+						startActivity(intent);
+					} else {
+						funciones.MostrarMensajeAceptar(MainActivity.this, "Configuración", "Debe configurar la aplicacion");
+					}
+				}
+			}
+		});
+	}
+	
+	@Override
+	protected void onRestart() {
+		controladorUsuario.cerrarSesion(this);
+		super.onRestart();
+	}
+	private String PassAdministrator(){
+		Calendar cal = Calendar.getInstance();
+		int diasDelMes = cal.get(Calendar.DAY_OF_WEEK);
+		int hoy = cal.get(Calendar.DAY_OF_MONTH);		
+		return "gvs.px" + diasDelMes + hoy;
+	}
+	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		// Inflate the menu; this adds items to the action bar if it is present.
+		getMenuInflater().inflate(R.menu.main, menu);
+		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+
+		switch (item.getItemId()) {
+		case R.id.configuracion:
+			Intent l = new Intent(this, LoginAdministratorActivity.class);
+			startActivity(l);
+			return true;
+		case R.id.version:
+			Intent i = new Intent(this, VersionActivity.class);
+			startActivity(i);
+			return true;
+		default:
+			return super.onOptionsItemSelected(item);
+		}
+
+	}
+}

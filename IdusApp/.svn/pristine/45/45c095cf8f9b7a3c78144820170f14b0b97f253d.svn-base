@@ -1,0 +1,93 @@
+package com.gvs.controladores;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.Vector;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.SQLException;
+import android.database.sqlite.SQLiteDatabase;
+import com.gvs.entidades.Sincronizador;
+import com.gvs.exceptiones.ExceptionNoAtendido;
+import com.gvs.exceptiones.ExceptionSincronizador;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+
+public class ControladorSincronizador {
+	private Context conte;
+	private Funciones funcion = new Funciones();
+	
+	public ControladorSincronizador(){
+		
+	}
+	public ControladorSincronizador(Context cont){
+		conte=cont;
+	}
+	
+	public boolean comprobarSync(Context cont, String tipo, int empresa,int vendedor) {
+		BaseDeDatos baseDeDatos = new BaseDeDatos(cont, funcion.BaseDeDatos(), null,funcion.Version());
+		final SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+
+		String sql = "SELECT MAX(FECHA) FROM SYNCRO WHERE CODIGOEMPRESA="
+				+ empresa + " AND CODIGOVENDEDOR=" + vendedor + "";
+		Cursor cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			if (cur.getString(0) != null) {
+				long fecha = Long.parseLong(cur.getString(0));
+				long fechaActual = new Date().getTime();
+				long diferencia = fechaActual - fecha;
+				if (diferencia >= 43200000) {
+					return false;
+				} else {
+					return true;
+				}
+			} else {
+				return false;
+			}
+		} else {
+			return false;
+		}
+	}
+	
+	public boolean marcarParaEnviar() throws ExceptionSincronizador{
+		try {
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			String Sql=""; 
+			Sql = "UPDATE SYNCRO SET ESTADO=11 WHERE ESTADO=0";
+			db.execSQL(Sql);
+			return true;
+		} catch (SQLException e) {
+			e.printStackTrace();
+			throw new ExceptionSincronizador("ERROR:Al intentar marcar sincronismos para ser enviados. " +
+					"Pongase en contacto con la mesa de ayuda. Error: " + e.getMessage());
+		}
+	}
+	
+	public Collection<Sincronizador> buscarSincronizacionesParaEnviar() throws ExceptionNoAtendido{
+		try {
+			Vector<Sincronizador> syncros = new Vector<Sincronizador>();
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			String Sql = "SELECT * FROM SYNCRO WHERE ESTADO=11";
+			Cursor cur = db.rawQuery(Sql, null);
+			if (cur.getColumnCount()>0){
+				while (cur.moveToNext()){
+					Sincronizador syncro = new Sincronizador();
+					syncro.setCodigoEmpresa(cur.getInt(cur.getColumnIndex("CODIGOEMPRESA")));
+					syncro.setCodigoVendedor(cur.getInt(cur.getColumnIndex("CODIGOVENDEDOR")));
+					syncro.setFechaIncio(cur.getLong(cur.getColumnIndex("FECHAINICIO")));
+					syncro.setFecha(cur.getLong(cur.getColumnIndex("FECHA")));
+					syncro.setModo(cur.getString(cur.getColumnIndex("MODO")));
+					syncro.setInternet(cur.getString(cur.getColumnIndex("INTERNET")));
+					syncros.add(syncro);
+				}
+			}
+			return syncros;
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new ExceptionNoAtendido(e.getMessage());
+		}
+	}
+	
+}

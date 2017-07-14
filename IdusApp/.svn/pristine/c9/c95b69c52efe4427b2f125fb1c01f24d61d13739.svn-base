@@ -1,0 +1,34 @@
+package com.gvs.entidades;
+
+public class NoAtendido {
+	private long fecha;
+	private int codigoCliente;
+	private int codigoMotivo;
+	private int codigoVendedor;
+	
+	
+	public long getFecha() {
+		return fecha;
+	}
+	public void setFecha(long fecha) {
+		this.fecha = fecha;
+	}
+	public int getCodigoCliente() {
+		return codigoCliente;
+	}
+	public void setCodigoCliente(int codigoCliente) {
+		this.codigoCliente = codigoCliente;
+	}
+	public int getCodigoMotivo() {
+		return codigoMotivo;
+	}
+	public void setCodigoMotivo(int codigoMotivo) {
+		this.codigoMotivo = codigoMotivo;
+	}
+	public int getCodigoVendedor() {
+		return codigoVendedor;
+	}
+	public void setCodigoVendedor(int codigoVendedor) {
+		this.codigoVendedor = codigoVendedor;
+	}
+}

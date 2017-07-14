@@ -1,0 +1,62 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.gvs.idusapp.RealizeOrderActivity" >
+
+    <item
+        android:id="@+id/menu_overflow"
+        android:icon="@drawable/opciones"
+        android:orderInCategory="11111"
+        android:showAsAction="always"
+        android:title="@string/menu_opciones">
+        <menu>
+
+            <!--
+                 <item
+                android:id="@+id/menu_informacion_cliente"
+                android:icon="@drawable/informacion"
+                android:orderInCategory="100"
+                android:showAsAction="ifRoom"
+                android:title="Informacion"/>
+            -->
+            <group android:id="@+id/group" >
+                <item
+                    android:id="@+id/menu_lanzamientos"
+                    android:icon="@drawable/rojo"
+                    android:showAsAction="ifRoom"
+                    android:title="Lanzamientos"/>
+                <item
+                    android:id="@+id/menu_imprescindibles"
+                    android:icon="@drawable/rojo"
+                    android:showAsAction="ifRoom"
+                    android:title="Imprescindibles"/>
+                <item
+                    android:id="@+id/menu_sugeridos"
+                    android:icon="@drawable/rojo"
+                    android:showAsAction="ifRoom"
+                    android:title="Sugeridos"/>
+            </group>
+            
+            <item
+                    android:id="@+id/menu_estado_cuenta"
+                    android:showAsAction="ifRoom"
+                    android:title="Estado de Cuenta"/>
+            
+            <item
+                    android:id="@+id/menu_analytic"
+                    android:showAsAction="ifRoom"
+                    android:title="Estrategia Comercial"/>
+            
+</menu>
+           
+    </item>
+   <item
+        android:id="@+id/cerrar_sesion"
+        android:orderInCategory="100"
+        android:showAsAction="never"
+        android:title="Salir"/>
+    <item
+        android:id="@+id/sincronizar"
+        android:orderInCategory="100"
+        android:showAsAction="never"
+        android:title="Sincronizar"/>
+</menu>

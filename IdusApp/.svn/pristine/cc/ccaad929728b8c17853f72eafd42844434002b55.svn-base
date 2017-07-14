@@ -1,0 +1,27 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+   <!--   <TextView
+        android:id="@+id/lbl_pedido"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="0.18"
+        android:background="#FFD700"
+        android:gravity="center"
+        android:paddingBottom="5dp"
+        android:paddingTop="5dp"
+        android:text=""
+        android:textSize="17sp"
+        android:textStyle="bold" />
+-->
+    <ListView
+        android:id="@+id/lista_item"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1.22"
+        android:listSelector="@anim/item_selector" >
+    </ListView>
+
+</LinearLayout>

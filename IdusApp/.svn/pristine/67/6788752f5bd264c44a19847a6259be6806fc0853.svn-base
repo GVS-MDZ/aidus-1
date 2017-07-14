@@ -1,0 +1,76 @@
+package com.gvs.entidades;
+
+public class Articulos {
+	private String codigoIdus;
+	private String detalle;
+	private double stock;
+	private double precio;
+	private int rubro;
+	private int subRubro;
+	private int multiplo;
+	private double oferta;
+
+	public String getCodigoIdus() {
+		return codigoIdus;
+	}
+
+	public void setCodigoIdus(String codigoIdus) {
+		this.codigoIdus = codigoIdus;
+	}
+
+	public String getDetalle() {
+		return detalle;
+	}
+
+	public void setDetalle(String detalle) {
+		this.detalle = detalle;
+	}
+
+	public double getStock() {
+		return stock;
+	}
+
+	public void setStock(double stock) {
+		this.stock = stock;
+	}
+
+	public double getPrecio() {
+		return precio;
+	}
+
+	public void setPrecio(double precio) {
+		this.precio = precio;
+	}
+
+	public int getRubro() {
+		return rubro;
+	}
+
+	public void setRubro(int rubro) {
+		this.rubro = rubro;
+	}
+
+	public int getSubRubro() {
+		return subRubro;
+	}
+
+	public void setSubRubro(int subRubro) {
+		this.subRubro = subRubro;
+	}
+
+	public int getMultiplo() {
+		return multiplo;
+	}
+
+	public void setMultiplo(int multiplo) {
+		this.multiplo = multiplo;
+	}
+
+	public double getOferta() {
+		return oferta;
+	}
+
+	public void setOferta(double oferta) {
+		this.oferta = oferta;
+	}
+}

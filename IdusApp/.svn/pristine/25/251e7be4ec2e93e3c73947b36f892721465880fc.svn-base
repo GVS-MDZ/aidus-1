@@ -1,0 +1,47 @@
+package com.gvs.conectoras;
+
+import java.io.DataInputStream;
+import android.content.Context;
+import com.gvs.busquedas.BusquedaUsuario;
+import com.gvs.entidades.Configuracion;
+import com.gvs.entidades.Usuario;
+
+public class ConectorUsuario extends ConectorGeneral {
+
+	private String usuario;
+	private String contrasena;
+	private Context conte;
+	private BusquedaUsuario busquedaUsuario;
+
+	public ConectorUsuario(Configuracion conf, String usu, String pass,Context context) {
+		super(conf);
+		usuario = usu;
+		contrasena = pass;
+		conte = context;
+	}
+
+	@Override
+	protected String CompletarURL() {
+		return "devolverUsuario2?usuario=" + usuario + "&contrasena="+ contrasena+"";
+	}
+
+	@Override
+	protected void procesarRespuesta(DataInputStream in) throws Exception {	
+		try {
+			Usuario usu = new Usuario();
+			usu.setId(in.readInt());
+			usu.setTipo(in.readUTF());
+			usu.setEmpresa(in.readInt());
+			usu.setCodigo(in.readInt());
+			usu.setNombre(in.readUTF());
+			usu.setContrasena(in.readUTF());
+			busquedaUsuario=new BusquedaUsuario(conte);
+			busquedaUsuario.modificarUsuarioConector(usu);
+		} catch (Exception e) {
+			throw new Exception(e.getMessage());
+		} finally {
+			in.close();
+		}
+	}
+
+}

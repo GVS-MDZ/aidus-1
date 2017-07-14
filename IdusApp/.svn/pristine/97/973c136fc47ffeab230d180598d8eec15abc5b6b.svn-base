@@ -1,0 +1,349 @@
+package com.gvs.busquedas;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+
+import com.gvs.entidades.Pedido;
+import com.gvs.idusapp.R;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+import com.gvs.utilidades.Order;
+
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+
+public class BusquedaPedidos {
+	
+	private Context conte;
+	private Funciones funcion = new Funciones();
+	
+	public BusquedaPedidos(Context cont) {
+		conte=cont;		
+	}
+	
+	public List<Order> buscarPedidosXCliente(int dia,int codigoCliente, int codigoVendedor){
+		try{
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		Date fecha = new Date();
+		Calendar calendario=Calendar.getInstance();
+		calendario.setTime(fecha);
+		calendario.add(Calendar.DAY_OF_YEAR,-30);
+		Date fecha_mes=calendario.getTime();
+		String hoyTexto = funcion.dateToString_yyyymmdd(fecha_mes.getTime());
+		Date fechaINI = funcion.stringToDate(hoyTexto);
+		String Sql = "SELECT NUMERO,NUMEROFINAL,FECHA,CANTIDADITEMS," +
+				"(CASE WHEN ESTADO=0 THEN 'FINALIZADO' " +
+				"WHEN ESTADO=10 THEN 'EDITADO' " +
+				"WHEN ESTADO=11 THEN 'MARCADO' " + 
+				"WHEN ESTADO=12 THEN 'ERROR' " +
+				"WHEN ESTADO=13 THEN 'EMAIL' " +
+				"WHEN ESTADO=1 THEN 'ENVIADO' " +
+				"WHEN ESTADO=2 THEN 'ANULADO' END) AS ESTADO "
+				+ "FROM PEDIDOSCABECERA WHERE FECHA BETWEEN " + fechaINI.getTime() + " AND " + fecha.getTime() + " "
+				+ "AND CODIGOCLIENTE=" + codigoCliente + " AND CODIGOVENDEDOR="+ codigoVendedor + " AND ESTADO<90 ORDER BY NUMERO DESC";
+		Cursor cur = db.rawQuery(Sql, null);
+
+			List<Order> list = new ArrayList <Order>();
+			while (cur.moveToNext()){
+				Order order=new Order();
+				String estado=cur.getString(cur.getColumnIndex("ESTADO"));
+				order.setNumber(funcion.format(cur.getInt(cur.getColumnIndex("NUMERO")),10)  + " - " + funcion.format(cur.getInt(cur.getColumnIndex("NUMEROFINAL")),10));
+				order.setDate(funcion.dateToString_yyyymmdd_hhmm(cur.getLong(cur.getColumnIndex("FECHA")))+" - "+estado);				
+				order.setItem(funcion.format(cur.getInt(cur.getColumnIndex("CANTIDADITEMS")),2));
+				if(estado.equals("FINALIZADO") || estado.equals("EDITADO") || estado.equals("MARCADO") ){
+					order.setIcon(R.drawable.amarillo);
+				}else if(estado.equals("ANULADO")){
+					order.setIcon(R.drawable.naranja);
+				}else if(estado.equals("ENVIADO")){
+					order.setIcon(R.drawable.verde);
+				}else if(estado.equals("EMAIL")){
+					order.setIcon(R.drawable.azul);
+				}else{
+					order.setIcon(R.drawable.rojo);
+				}
+				list.add(order);		
+			}
+			return list;	
+		}catch(Exception ex){
+			return null;
+		}
+	}
+
+	
+	public List<Order> buscarPedidosXDia(int codigoVendedor,int dia){
+		try{
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+
+		Date fecha = new Date();
+		String hoyTexto = funcion.dateToString_yyyymmdd(fecha.getTime());
+		Date fechaINI = funcion.stringToDate(hoyTexto);
+		String Sql="";
+		if(dia>0){
+			Sql = "SELECT A.CODIGOCLIENTE,NUMERO,NUMEROFINAL,FECHA,CANTIDADITEMS," +
+					"(CASE WHEN ESTADO=0 THEN 'FINALIZADO' " +
+					"WHEN ESTADO=10 THEN 'EDITADO' " +
+					"WHEN ESTADO=11 THEN 'MARCADO'"+ 
+					"WHEN ESTADO=12 THEN 'ERROR' " +
+					"WHEN ESTADO=13 THEN 'EMAIL' " +
+					"WHEN ESTADO=1 THEN 'ENVIADO' " +
+					"WHEN ESTADO=2 THEN 'ANULADO' END) AS ESTADO "
+					+ " FROM PEDIDOSCABECERA AS A INNER JOIN VISITAS AS V ON A.CODIGOCLIENTE=V.CODIGOCLIENTE" +
+					" WHERE A.FECHA BETWEEN " + fechaINI.getTime() + " AND " + fecha.getTime() + 
+					" AND A.CODIGOVENDEDOR="+ codigoVendedor + " AND ESTADO<90 AND A.DIA= "+dia+" AND SUBSTR(V.DIAS," + dia +",1)='" + dia +"' ORDER BY NUMERO DESC";
+		}else{
+			Sql = "SELECT NUMERO,NUMEROFINAL,FECHA,CANTIDADITEMS," +
+					"(CASE WHEN ESTADO=0 THEN 'FINALIZADO' " +
+					"WHEN ESTADO=10 THEN 'EDITADO' " +
+					"WHEN ESTADO=11 THEN 'MARCADO'"+ 
+					"WHEN ESTADO=12 THEN 'ERROR' " +
+					"WHEN ESTADO=13 THEN 'EMAIL' " +
+					"WHEN ESTADO=1 THEN 'ENVIADO' " +
+					"WHEN ESTADO=2 THEN 'ANULADO' END) AS ESTADO FROM PEDIDOSCABECERA" +
+					" WHERE FECHA BETWEEN " + fechaINI.getTime() + " AND " + fecha.getTime() + 
+					" AND CODIGOVENDEDOR="+ codigoVendedor + " AND ESTADO<90 ORDER BY NUMERO DESC";
+		}
+
+		Cursor cur = db.rawQuery(Sql, null);
+		if (cur.getCount()>0){
+			List<Order> list = new ArrayList <Order>();
+			while (cur.moveToNext()){
+				Order order=new Order();
+				String estado=cur.getString(cur.getColumnIndex("ESTADO"));
+				order.setNumber(funcion.format(cur.getInt(cur.getColumnIndex("NUMERO")),10)  + " - " + funcion.format(cur.getInt(cur.getColumnIndex("NUMEROFINAL")),10));
+				order.setDate(funcion.dateToString_yyyymmdd_hhmm(cur.getLong(cur.getColumnIndex("FECHA")))+" - "+estado);				
+				order.setItem(funcion.format(cur.getInt(cur.getColumnIndex("CANTIDADITEMS")),2));
+				if(estado.equals("FINALIZADO") || estado.equals("EDITADO") || estado.equals("MARCADO")){
+					order.setIcon(R.drawable.amarillo);
+				}else if(estado.equals("ANULADO")){
+					order.setIcon(R.drawable.naranja);
+				}else if(estado.equals("ENVIADO")){
+					order.setIcon(R.drawable.verde);
+				}else if(estado.equals("EMAIL")){
+					order.setIcon(R.drawable.azul);
+				}
+				else{
+					order.setIcon(R.drawable.rojo);
+				}	
+				list.add(order);
+			}
+			return list;
+		} else {
+			return null;
+		}
+		}catch(Exception ex){
+			return null;
+		}
+	}
+	
+	public List<Order> buscarPedidosXDiaMail(int codigoVendedor,int dia){
+		try{
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+
+		Date fecha = new Date();
+		String hoyTexto = funcion.dateToString_yyyymmdd(fecha.getTime());
+		Date fechaINI = funcion.stringToDate(hoyTexto);
+		String Sql="";
+		if(dia>0){
+			Sql = "SELECT A.CODIGOCLIENTE,NUMERO,NUMEROFINAL,FECHA,CANTIDADITEMS," +
+					"(CASE WHEN ESTADO=0 THEN 'FINALIZADO' " +
+					"WHEN ESTADO=10 THEN 'EDITADO' " +
+					"WHEN ESTADO=11 THEN 'MARCADO'"+ 
+					"WHEN ESTADO=12 THEN 'ERROR' " +
+					"WHEN ESTADO=13 THEN 'EMAIL' " +
+					"WHEN ESTADO=1 THEN 'ENVIADO' " +
+					"WHEN ESTADO=2 THEN 'ANULADO' END) AS ESTADO "
+					+ " FROM PEDIDOSCABECERA AS A INNER JOIN VISITAS AS V ON A.CODIGOCLIENTE=V.CODIGOCLIENTE" +
+					" WHERE A.FECHA BETWEEN " + fechaINI.getTime() + " AND " + fecha.getTime() + 
+					" AND A.CODIGOVENDEDOR="+ codigoVendedor + " AND ESTADO IN(0,10,11,12,13) AND A.DIA= "+dia+" AND SUBSTR(V.DIAS," + dia +",1)='" + dia +"' ORDER BY NUMERO DESC";
+		}else{
+			Sql = "SELECT NUMERO,NUMEROFINAL,FECHA,CANTIDADITEMS," +
+					"(CASE WHEN ESTADO=0 THEN 'FINALIZADO' " +
+					"WHEN ESTADO=10 THEN 'EDITADO' " +
+					"WHEN ESTADO=11 THEN 'MARCADO'"+ 
+					"WHEN ESTADO=12 THEN 'ERROR' " +
+					"WHEN ESTADO=13 THEN 'EMAIL' " +
+					"WHEN ESTADO=1 THEN 'ENVIADO' " +
+					"WHEN ESTADO=2 THEN 'ANULADO' END) AS ESTADO FROM PEDIDOSCABECERA" +
+					" WHERE FECHA BETWEEN " + fechaINI.getTime() + " AND " + fecha.getTime() + 
+					" AND CODIGOVENDEDOR="+ codigoVendedor + " AND AND ESTADO IN(0,10,11,12,13) ORDER BY NUMERO DESC";
+		}
+
+		Cursor cur = db.rawQuery(Sql, null);
+		if (cur.getCount()>0){
+			List<Order> list = new ArrayList <Order>();
+			while (cur.moveToNext()){
+				Order order=new Order();
+				String estado=cur.getString(cur.getColumnIndex("ESTADO"));
+				order.setNumber(funcion.format(cur.getInt(cur.getColumnIndex("NUMERO")),10)  + " - " + funcion.format(cur.getInt(cur.getColumnIndex("NUMEROFINAL")),10));
+				order.setDate(funcion.dateToString_yyyymmdd_hhmm(cur.getLong(cur.getColumnIndex("FECHA")))+" - "+estado);				
+				order.setItem(funcion.format(cur.getInt(cur.getColumnIndex("CANTIDADITEMS")),2));
+				if(estado.equals("FINALIZADO") || estado.equals("EDITADO") || estado.equals("MARCADO")){
+					order.setIcon(R.drawable.amarillo);
+				}else if(estado.equals("ANULADO")){
+					order.setIcon(R.drawable.naranja);
+				}else if(estado.equals("ENVIADO")){
+					order.setIcon(R.drawable.verde);
+				}else if(estado.equals("EMAIL")){
+					order.setIcon(R.drawable.azul);
+				}
+				else{
+					order.setIcon(R.drawable.rojo);
+				}	
+				list.add(order);
+			}
+			return list;
+		} else {
+			return null;
+		}
+		}catch(Exception ex){
+			return null;
+		}
+	}
+	
+	public boolean buscarPedidoParaEdicion(long numeroPedido){
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+
+		String Sql = "SELECT * FROM PELDIDOSCABECERA WHERE NUMERO=" + numeroPedido;
+		Cursor cur = db.rawQuery(Sql, null);
+		boolean Estado = false;
+		if (cur.moveToNext()){
+			switch (cur.getInt(cur.getColumnIndex("ESTADO"))) {
+			case 0:
+				Estado=true;
+				break;
+			case 1:
+				Estado=false;
+				break;
+			case 2:
+				Estado=false;
+				break;
+			case 11:
+				Estado=false;
+			case 10:
+				Estado=true;
+				break;
+			default:
+				Estado=false;
+				break;
+			}
+		}
+		return Estado;
+	}
+	
+	public List<Order> buscarPedidosPendientesDia(int codigoVendedor,int dia) {
+		try{
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		Date fecha = new Date();
+		String hoyTexto = funcion.dateToString_yyyymmdd(fecha.getTime());
+		Date fechaINI = funcion.stringToDate(hoyTexto);
+		String Sql="";
+		if(dia>0){
+		   Sql = "SELECT A.CODIGOCLIENTE,NUMERO,NUMEROFINAL,FECHA,CANTIDADITEMS," +
+					"(CASE WHEN ESTADO=0 THEN 'FINALIZADO' " +
+					"WHEN ESTADO=10 THEN 'EDITADO' " +
+					"WHEN ESTADO=11 THEN 'MARCADO'"+ 
+					"WHEN ESTADO=12 THEN 'ERROR' " +
+					"WHEN ESTADO=1 THEN 'ENVIADO' " +
+					"WHEN ESTADO=2 THEN 'ANULADO' END) AS ESTADO FROM PEDIDOSCABECERA AS A INNER JOIN VISITAS AS V ON A.CODIGOCLIENTE=V.CODIGOCLIENTE" +
+					" WHERE A.FECHA BETWEEN " + fechaINI.getTime() + " AND " + fecha.getTime() + 
+					" AND A.DIA= "+dia+" AND A.CODIGOVENDEDOR="+ codigoVendedor + " AND ESTADO NOT IN(1,2,13) AND SUBSTR(V.DIAS," + dia +",1)='" + dia +"' ORDER BY NUMERO DESC";
+		}else{
+		     Sql ="SELECT NUMERO,NUMEROFINAL,FECHA,CANTIDADITEMS," +
+			"(CASE WHEN ESTADO=0 THEN 'FINALIZADO' " +
+			"WHEN ESTADO=10 THEN 'EDITADO' " +
+			"WHEN ESTADO=11 THEN 'MARCADO' " + 
+			"WHEN ESTADO=12 THEN 'ERROR' " +
+			"WHEN ESTADO=1 THEN 'ENVIADO' " +
+			"WHEN ESTADO=2 THEN 'ANULADO' END) AS ESTADO FROM PEDIDOSCABECERA" +
+			" WHERE FECHA BETWEEN " + fechaINI.getTime() + " AND " + fecha.getTime() + 
+			" AND CODIGOVENDEDOR="+ codigoVendedor + " AND ESTADO NOT IN(1,2,13) ORDER BY NUMERO DESC";
+		}
+		
+		Cursor cur = db.rawQuery(Sql, null);
+		if (cur.getCount()>0){
+			List<Order> list = new ArrayList <Order>();
+			while (cur.moveToNext()){
+				Order order=new Order();
+				String estado=cur.getString(cur.getColumnIndex("ESTADO"));
+				order.setNumber(funcion.format(cur.getInt(cur.getColumnIndex("NUMERO")),10)  + " - " + funcion.format(cur.getInt(cur.getColumnIndex("NUMEROFINAL")),10));
+				order.setDate(funcion.dateToString_yyyymmdd_hhmm(cur.getLong(cur.getColumnIndex("FECHA")))+" - "+estado);				
+				order.setItem(funcion.format(cur.getInt(cur.getColumnIndex("CANTIDADITEMS")),2));
+				if(estado.equals("FINALIZADO") || estado.equals("EDITADO") || estado.equals("MARCADO")){
+					order.setIcon(R.drawable.amarillo);
+				}else if(estado.equals("ANULADO")){
+					order.setIcon(R.drawable.naranja);
+				}else if(estado.equals("ENVIADO")){
+					order.setIcon(R.drawable.verde);
+				}else{
+					order.setIcon(R.drawable.rojo);
+				}	
+				list.add(order);
+			}
+			return list;
+		} else {
+			return null;
+		}
+		}catch(Exception ex){
+			return null;
+		}
+	}
+	
+	public boolean buscarSiYaFueCargadoElArtículo(long numeroPedido, String codigoArticulo) throws Exception{
+		try {
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			String Sql = "SELECT CODIGOARTICULO FROM PEDIDOSCUERPO "
+					+ "WHERE NUMERO=" + numeroPedido + " AND CODIGOARTICULO='" + codigoArticulo + "' AND ESTADO<90";
+			Cursor cur = db.rawQuery(Sql, null);
+			if (cur.getCount()>0){
+				return true;
+			} else {
+				return false;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new Exception("Error al buscar si está ingresado el articulo seleccionado: " + e.getMessage());
+		}
+	}
+	
+	public int devolverCantidadVendidosXCliente(int dia, int codigoCliente) throws Exception{
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		Cursor cur = null;
+		int cantidad=0;
+		try {
+			Date fecha = new Date();
+			String hoyTexto = funcion.dateToString_yyyymmdd(fecha.getTime());
+			Date fechaINI = funcion.stringToDate(hoyTexto);
+
+			String Sql = "SELECT COUNT(A.CODIGOCLIENTE),NUMERO FROM PEDIDOSCABECERA AS A "
+					+ "INNER JOIN VISITAS AS V ON A.CODIGOCLIENTE=V.CODIGOCLIENTE "
+					+ "WHERE A.CODIGOCLIENTE=" + codigoCliente +" AND A.DIA= "+dia+
+					" AND A.FECHA BETWEEN " + fechaINI.getTime() + " AND " + fecha.getTime() + 
+					" AND A.ESTADO NOT IN(2) AND SUBSTR(V.DIAS," + dia +",1)='" + dia +"'"
+					+" GROUP BY A.CODIGOCLIENTE";
+			
+			cur = db.rawQuery(Sql, null);
+			if (cur.getCount()>0) {
+				while (cur.moveToNext()){
+					cantidad++;
+				}
+			} else {
+				cantidad=0;
+			}
+			return cantidad;			
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new Exception(e.getMessage());
+		}
+	}
+	
+}

@@ -1,0 +1,50 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.gvs.idusapp.OrderDetailFinalActivity" >
+
+    <item
+        android:id="@+id/menu_overflow"
+        android:icon="@drawable/opciones"
+        android:orderInCategory="11111"
+        android:showAsAction="always"
+        android:title="@string/menu_opciones">
+        <menu>
+            <item
+                android:id="@+id/menu_editar"
+                android:icon="@drawable/editar"
+                android:showAsAction="ifRoom"
+                android:title="@string/menu_editar"/>
+            <item
+                android:id="@+id/menu_anular"
+                android:icon="@drawable/anular"
+                android:showAsAction="ifRoom"
+                android:title="@string/menu_anular"/>
+            <item
+                android:id="@+id/menu_finalizar"
+                android:icon="@drawable/finalizar"
+                android:showAsAction="ifRoom"
+                android:title="@string/menu_finalizar"/>
+            <item
+                android:id="@+id/menu_marcar"
+                android:icon="@drawable/marcar"
+                android:showAsAction="ifRoom"
+                android:title="@string/menu_marcar"/>
+            <item
+                android:id="@+id/menu_items"
+                android:icon="@drawable/items"
+                android:showAsAction="ifRoom"
+                android:title="@string/menu_items"/>
+        </menu>
+    </item>
+    <item
+        android:id="@+id/cerrar_sesion"
+        android:orderInCategory="100"
+        android:showAsAction="never"
+        android:title="Salir"/>
+     <item
+        android:id="@+id/sincronizar"
+        android:orderInCategory="100"
+        android:showAsAction="never"
+        android:title="Sincronizar"/>
+
+</menu>

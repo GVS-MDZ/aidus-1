@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Main -->
+    <string name="app_name">IdusApp</string>
+    <string name="menu_configuracion">Configuracion</string>
+    <string name="menu_version">Version</string>
+    <string name="img_software"></string>
+    <string name="lbl_gestion_visual_software">Gestion Visual Software</string>
+    <string name="btn_ingresar">Ingresar</string>
+    <!-- Version -->
+    <string name="title_activity_version">Version</string>
+    <string name="action_settings">Settings</string>
+    <string name="txt_version">Version 6.0.6</string>
+    <string name="txt_android">Disponible para android 4.1.2 (Jelly Bean) o superior</string>
+    <string name="img_mondelez"></string>
+    <string name="txt_gvs">Todos los derechos reservados a Gestion Visual Software</string>
+    <string name="txt_copyright">Copyright © 2014</string>
+    <!-- Login -->
+    <string name="title_activity_login">Control de Acceso</string>
+    <string name="usuario">Usuario</string>
+    <string name="contrasena">Contraseña</string>
+    <string name="iniciar_sesion">Iniciar Sesion</string>
+    <!-- Configuration -->
+    <string name="title_activity_configuration">Configuracion</string>
+    <string name="servidor">Servidor</string>
+    <string name="value_servidor">agvs-mdz.dyndns.org</string>
+    <string name="puerto">Puerto</string>
+    <string name="value_puerto">8080</string>
+    <string name="items">Cantidad de items por pedidos</string>
+    <string name="value_items">0</string>
+    <string name="cierre_dia">Cierre de dia completo</string>
+    <string name="muestra_sugeridos">Muestra sugeridos</string>
+    <string name="servicio_geo">Servicio de geoposicionamiento</string>
+    <string name="ver_dia">Permite ver mas dias</string>
+    <string name="permite_descuento">Permite descuento</string>
+    <string name="btn_aceptar">Aceptar</string>
+
+    <!-- Sincronizador -->
+    <string name="title_activity_sync">Sincronizador</string>
+
+    <!-- Dia de visita -->
+    <string name="title_activity_work_day">Visita</string>
+    <string name="menu_ventas_periodo">Ventas del mes</string>
+    <string name="lbl_vacio"></string>
+    <!-- Login administrador -->
+    <string name="title_activity_login_administrator">Administrador</string>
+    <!-- Actividades del dia seleccionado tab general -->
+    <string name="title_activity_tab_general">Actividades</string>
+    <string name="menu_actualizar">Actualizar</string>
+    <!-- cierre de dia -->
+    <string name="menu_cierre_dia">Cierre del Dia</string>
+    <string name="lbl_cierre_dia">El cierre de día es una operación importante 
+        que le permite a la administración saber concretamente cuando usted a 
+        terminado su día de trabajo</string>
+    <string name="lbl_efectividad_venta">Efectividad de Venta</string>
+    <string name="lbl_efectividad_visita">Visitas</string>
+    <string name="lbl_efectividad_ruta">En ruta</string>
+    <string name="lbl_cant_visita">Cantidad de Visitas</string>
+    <string name="lbl_venta">Venta</string>
+    <string name="lbl_no_venta">No Venta</string>
+    <string name="lbl_no_enviado">No Enviados</string>
+    <string name="btn_grabar_cierre">Grabar Cierre</string>
+    <!-- Resumen del dia -->
+    <string name="lbl_visitas">Visitas</string>
+    <string name="lbl_cantidad">Cantidad</string>
+    <string name="lbl_programadas">Programadas</string>
+    <string name="lbl_fuera_ruta">Fuera de Ruta</string>
+    <string name="lbl_efectivas">Efectivas</string>
+    <string name="lbl_no_efectivas">No Efectivas</string>
+    <string name="lbl_realizadas">Realizadas</string>
+    <string name="lbl_datos_generales">Datos Generales</string>
+    <string name="lbl_importe">Importe</string>
+    <string name="lbl_drop_size">Drop size</string>
+    <string name="lbl_pedidos">Pedidos</string>
+    <string name="lbl_pedidos_fuera_ruta">Pedidos Fuera de Ruta</string>
+    <string name="lbl_efectividad">Efectividad</string>
+    <string name="lbl_actual">Actual</string>
+    <string name="lbl_objetivos">Objetivos</string>
+    <string name="lbl_ruta">Ruta</string>
+    <string name="lbl_visita">Visita</string>
+    <string name="lbl_conexion">Conexion</string>
+    <string name="lbl_datos">Datos</string>
+    <string name="lbl_gps">Gps</string>
+    <string name="lbl_latitud">Latitud</string>
+    <string name="lbl_longitud">Longitud</string>
+    <string name="lbl_valor_gps">Si</string>
+    <string name="lbl_cero">0</string>
+    <string name="btn_clientes">Clientes</string>
+    <!-- pedidos del dia -->
+    <string name="title_order_day">Pedidos del dia</string>
+    <!-- pedido por clientes -->
+    <string name="lbl_pedidos_del_dia">Pedidos Del Dia</string>
+    <!-- Ventas por periodo -->
+    <string name="title_activity_sales_period">Ventas del Mes</string>
+    <!-- clientes -->
+    <string name="title_activity_client">Clientes</string>
+    <!-- tab cierre -->
+    <string name="title_activity_tab_close_day">Fin del Dia</string>
+    <!-- pedidos sin enviar -->
+    <string name="lbl_pedidos_sin_enviar">Pedidos Sin Enviar</string>
+    <!-- operaciones del cliente -->
+    <string name="title_activity_client_operation">Acciones</string>
+    <!-- informacion del cliente -->
+    <string name="title_activity_customer_information">Informacion</string>
+    <string name="lbl_informacion_cliente">Cliente Andres Calamaro</string>
+    <string name="lbl_datos_personales">Datos Personales</string>
+    <string name="lbl_provincia">Provincia</string>
+    <string name="lbl_localidad">Localidad</string>
+    <string name="lbl_telefono">Telefono</string>
+    <string name="lbl_observaciones">Observaciones</string>
+    <string name="lbl_saldo">Saldo</string>
+    <string name="lbl_objetivos_visita">Objetivo Por Visita</string>
+    <string name="lbl_periodo">PERIODO</string>
+    <string name="lbl_periodo_anterior">PERIODO ANTERIOR</string>
+    <string name="lbl_periodo_actual">PERIODO ACTUAL</string>
+    <string name="lbl_visita_semana">VISITAS POR SEMANA</string>
+    <string name="lbl_ventas_periodo">VENTAS PERIODO ACTUAL</string>
+    <string name="lbl_fecha_actualizacion">FECHA ACTUALIZACION</string>
+    <string name="lbl_porcentaje_alcanzado">PORCENTAJE ALCANZADO</string>
+    <string name="lbl_objetivo_visita">OBJETIVO POR VISITA</string>
+    <!-- Motivos de no venta -->
+    <string name="title_activity_motive">Motivos No Venta</string>
+    <!-- Encuestas -->
+    <string name="title_activity_question">Encuestas</string>
+    <!-- Responder Encuesta -->
+    <string name="title_activity_answer_question">Toma de Encuesta</string>
+    <!-- Pedidos por cliente -->
+    <string name="title_activity_order_client">Pedidos</string>
+    <!-- Detalle pedido -->
+    <string name="title_activity_order_detail">Detalle</string>
+    <!-- Realizar Pedido -->
+    <string name="title_activity_make_order">Realizar Pedido</string>
+    <string name="menu_informacion">Informacion</string>
+    <string name="title_activity_realize_order">Realizar Pedido</string>
+    <string name="lbl_numero">Numero</string>
+    <string name="lbl_texto">Alfanumerico</string>
+    <string name="lbl_detalle">Detalle</string>
+    <string name="lbl_codigo">Codigo</string>
+    <string name="lbl_cantidad_art">Cantidad</string>
+    <string name="lbl_descuento">Descuento</string>
+    <string name="lbl_stock">Stock</string>
+    <string name="lbl_precio">Precio</string>
+    <string name="lbl_total">Total</string>
+    <string name="lbl_multiplo">Multiplo</string>
+    <string name="lbl_item_acumulado">Items Acumulados</string>
+    <string name="lbl_item_permitido">Items Permitidos</string>
+    <string name="lbl_fecha">Fecha de Entrega</string>
+    <string name="lbl_observacion">Observacion</string>
+    <string name="lbl_agregar">Agregar</string>
+    <string name="lbl_items">Items</string>
+    <string name="lbl_finalizar">Finalizar</string>
+    <string name="title_activity_search_article">Articulos</string>
+    <string name="menu_editar">Editar</string>
+    <string name="menu_eliminar">Eliminar</string>
+    <string name="btn_eceptar">Aceptar</string>
+    <string name="btn_cancelar">Cancelar</string>
+    <string name="title_activity_order_detail_final">Detalle del pedido</string>
+    <string name="menu_finalizar">Finalizar</string>
+    <string name="menu_anular">Anular</string>
+    <string name="menu_marcar">Marcar</string>
+    <string name="menu_items">Items</string>
+    <string name="menu_opciones">Opciones</string>
+    <!-- Comprobantes clientes -->
+    <string name="title_activity_voucher_client">Deuda</string>
+    <string name="title_activity_article_launch">Lanzamientos</string>
+    <string name="title_activity_article_indispensable">Imprescindibles</string>
+    <string name="title_activity_article_suggested">Sugeridos</string>
+    <string name="title_activity_sync_order">Sincronizador</string>
+    <string name="title_activity_loading">LoadingActivity</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="title_activity_client_map">Localizacion GPS</string>
+    <string name="title_activity_gps_client">Gps</string>
+    <string name="title_activity_order_mail">Email</string>
+
+</resources>

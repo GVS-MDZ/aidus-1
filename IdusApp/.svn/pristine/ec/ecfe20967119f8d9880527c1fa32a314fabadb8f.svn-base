@@ -1,0 +1,62 @@
+package com.gvs.entidades;
+
+public class Configuracion {
+
+	private String nombreSrv;
+	private int puerto;
+	private int diaCompleto;
+	private int muestraSugeridos;
+	private int servicioGeo;
+	private int otroDia;
+	private int cantidadItems;
+	private int descuento;
+	
+	public String getNombreSrv() {
+		return nombreSrv;
+	}
+	public void setNombreSrv(String nombreSrv) {
+		this.nombreSrv = nombreSrv;
+	}
+	public int getPuerto() {
+		return puerto;
+	}
+	public void setPuerto(int puerto) {
+		this.puerto = puerto;
+	}
+	public int getDiaCompleto() {
+		return diaCompleto;
+	}
+	public void setDiaCompleto(int diaCompleto) {
+		this.diaCompleto = diaCompleto;
+	}
+	public int getMuestraSugeridos() {
+		return muestraSugeridos;
+	}
+	public void setMuestraSugeridos(int muestraSugeridos) {
+		this.muestraSugeridos = muestraSugeridos;
+	}
+	public int getServicioGeo() {
+		return servicioGeo;
+	}
+	public void setServicioGeo(int servicioGeo) {
+		this.servicioGeo = servicioGeo;
+	}
+	public int getOtroDia() {
+		return otroDia;
+	}
+	public void setOtroDia(int otroDia) {
+		this.otroDia = otroDia;
+	}
+	public int getCantidadItems() {
+		return cantidadItems;
+	}
+	public void setCantidadItems(int cantidadItems) {
+		this.cantidadItems = cantidadItems;
+	}
+	public int getDescuento() {
+		return descuento;
+	}
+	public void setDescuento(int descuento) {
+		this.descuento = descuento;
+	}
+}

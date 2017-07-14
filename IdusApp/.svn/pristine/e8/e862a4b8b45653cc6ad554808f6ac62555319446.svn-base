@@ -1,0 +1,89 @@
+package com.gvs.entidades;
+
+import android.os.Parcel;
+import android.os.Parcelable;
+
+public class CierresDeDia  implements Parcelable{
+	private int codigoVendedor;
+	private long fecha;
+	private int clientesDelDia;
+	private int clientesAtendidos;
+	private int clientesNoAtendidos;
+	private int pedidosSinEnviar;
+	private int motivosSinEnviar;
+	private double cobGeneral;
+	private double cobEfectiva;
+	private int estado;
+	
+	
+	public int getCodigoVendedor() {
+		return codigoVendedor;
+	}
+	public void setCodigoVendedor(int codigoVendedor) {
+		this.codigoVendedor = codigoVendedor;
+	}
+	public long getFecha() {
+		return fecha;
+	}
+	public void setFecha(long fecha) {
+		this.fecha = fecha;
+	}
+	public int getClientesDelDia() {
+		return clientesDelDia;
+	}
+	public void setClientesDelDia(int clientesDelDia) {
+		this.clientesDelDia = clientesDelDia;
+	}
+	public int getClientesAtendidos() {
+		return clientesAtendidos;
+	}
+	public void setClientesAtendidos(int clientesAtendidos) {
+		this.clientesAtendidos = clientesAtendidos;
+	}
+	public int getClientesNoAtendidos() {
+		return clientesNoAtendidos;
+	}
+	public void setClientesNoAtendidos(int clientesNoAtendidos) {
+		this.clientesNoAtendidos = clientesNoAtendidos;
+	}
+	public int getPedidosSinEnviar() {
+		return pedidosSinEnviar;
+	}
+	public void setPedidosSinEnviar(int pedidosSinEnviar) {
+		this.pedidosSinEnviar = pedidosSinEnviar;
+	}
+	public int getMotivosSinEnviar() {
+		return motivosSinEnviar;
+	}
+	public void setMotivosSinEnviar(int motivosSinEnviar) {
+		this.motivosSinEnviar = motivosSinEnviar;
+	}
+	public double getCobGeneral() {
+		return cobGeneral;
+	}
+	public void setCobGeneral(double cobGeneral) {
+		this.cobGeneral = cobGeneral;
+	}
+	public double getCobEfectiva() {
+		return cobEfectiva;
+	}
+	public void setCobEfectiva(double cobEfectiva) {
+		this.cobEfectiva = cobEfectiva;
+	}
+	public int getEstado() {
+		return estado;
+	}
+	public void setEstado(int estado) {
+		this.estado = estado;
+	}
+	@Override
+	public int describeContents() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+	@Override
+	public void writeToParcel(Parcel dest, int flags) {
+		// TODO Auto-generated method stub
+		
+	}
+}

@@ -1,0 +1,106 @@
+package com.gvs.entidades;
+
+public class Pedido {
+	private int numero;
+	private int numero_final;
+	private long fecha;
+	private int avance;
+	private int codigoCliente;
+	private int codigoVendedor;
+	private int cantidadItems;
+	private String internet;
+	private String latitud;
+	private String longitud;
+	private String precision;
+	private String provee;
+	private String Observacion;
+	private long fechaEntrega;
+	
+	public int getNumero() {
+		return numero;
+	}
+	public void setNumero(int numero) {
+		this.numero = numero;
+	}
+	
+	
+	public int getNumero_final() {
+		return numero_final;
+	}
+	public void setNumero_final(int numero_final) {
+		this.numero_final = numero_final;
+	}
+	public int getAvance() {
+		return avance;
+	}
+	public void setAvance(int avance) {
+		this.avance = avance;
+	}
+	public int getCodigoCliente() {
+		return codigoCliente;
+	}
+	public void setCodigoCliente(int codigoCliente) {
+		this.codigoCliente = codigoCliente;
+	}
+	public int getCodigoVendedor() {
+		return codigoVendedor;
+	}
+	public void setCodigoVendedor(int codigoVendedor) {
+		this.codigoVendedor = codigoVendedor;
+	}
+	public int getCantidadItems() {
+		return cantidadItems;
+	}
+	public void setCantidadItems(int cantidadItems) {
+		this.cantidadItems = cantidadItems;
+	}
+	public String getInternet() {
+		return internet;
+	}
+	public void setInternet(String internet) {
+		this.internet = internet;
+	}
+	public String getLatitud() {
+		return latitud;
+	}
+	public void setLatitud(String latitud) {
+		this.latitud = latitud;
+	}
+	public String getLongitud() {
+		return longitud;
+	}
+	public void setLongitud(String longitud) {
+		this.longitud = longitud;
+	}
+	public String getPrecision() {
+		return precision;
+	}
+	public void setPrecision(String precision) {
+		this.precision = precision;
+	}
+	public String getProvee() {
+		return provee;
+	}
+	public void setProvee(String provee) {
+		this.provee = provee;
+	}
+	public long getFecha() {
+		return fecha;
+	}
+	public void setFecha(long fecha) {
+		this.fecha = fecha;
+	}
+	public String getObservacion() {
+		return Observacion;
+	}
+	public void setObservacion(String observacion) {
+		Observacion = observacion;
+	}
+	public long getFechaEntrega() {
+		return fechaEntrega;
+	}
+	public void setFechaEntrega(long fechaEntrega) {
+		this.fechaEntrega = fechaEntrega;
+	}
+	
+}

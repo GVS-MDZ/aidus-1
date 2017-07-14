@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+    <TextView
+        android:id="@+id/lbl_comprobante_cobranza"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#2f2d2e"
+        android:gravity="center"
+        android:paddingBottom="10dp"
+        android:paddingTop="10dp"
+        android:text="ADMINISTRADOR"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold" />
+
+    <EditText
+        android:id="@+id/txt_usuario"
+        android:layout_width="match_parent"
+        android:layout_height="45dp"
+        android:layout_marginTop="10dp"
+        android:ems="10"
+        android:fontFamily="sans-serif"
+        android:hint="@string/usuario"
+        android:inputType="text" >
+
+        <requestFocus />
+    </EditText>
+
+    <EditText
+        android:id="@+id/txt_contrasena"
+        android:layout_width="match_parent"
+        android:layout_height="45dp"
+        android:ems="10"
+        android:fontFamily="sans-serif"
+        android:hint="@string/contrasena"
+        android:inputType="textPassword" />
+
+    <TextView
+        android:id="@+id/lbl_mensaje"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:paddingBottom="5dp"
+        android:paddingTop="5dp"
+        android:textColor="#FF0000" />
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="35dp" >
+
+        <Button
+            android:id="@+id/btn_cancelar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="1dp"
+            android:layout_weight="1"
+            android:background="@anim/btn_ingresar"
+            android:text="@string/btn_cancelar"
+            android:textColor="#FFFFFF" />
+
+        <Button
+            android:id="@+id/btn_aceptar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="1dp"
+            android:layout_weight="1"
+            android:background="@anim/btn_ingresar"
+            android:text="@string/btn_aceptar"
+            android:textColor="#FFFFFF" />
+    </LinearLayout>
+
+</LinearLayout>

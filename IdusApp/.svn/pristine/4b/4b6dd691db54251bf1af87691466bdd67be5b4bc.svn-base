@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal" >
+
+  <!--    <ImageView
+        android:id="@+id/img_estado_cliente"
+        android:layout_width="wrap_content"
+        android:layout_height="72dp"
+        android:paddingTop="7dp"
+        android:src="@drawable/verde" />
+-->
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" >
+
+        <TextView
+            android:id="@+id/lbl_nombre_cliente"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:gravity="bottom"
+            android:maxLines="1"
+            android:paddingLeft="5dp"
+            android:singleLine="true"
+            android:text="Nombre Cliente"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/lbl_actual"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#B22222"
+            android:paddingLeft="5dp"
+            android:singleLine="true"
+            android:text="actual"
+            android:textSize="11sp" />
+
+        <TextView
+            android:id="@+id/lbl_cantidad_visita"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:paddingLeft="5dp"
+            android:singleLine="true"
+            android:text="visita"
+            android:textColor="#FF8C00"
+            android:textSize="11sp" />
+
+     <TextView
+            android:id="@+id/lbl_objetivo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:paddingLeft="5dp"
+            android:singleLine="true"
+            android:textColor="#008000"
+            android:text="objetivo"
+            android:textSize="11sp" />
+
+        <TextView
+            android:id="@+id/lbl_porcentaje"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#00BFFF"
+            android:paddingLeft="5dp"
+            android:singleLine="true"
+            android:text="Porcentaje"
+           android:layout_marginBottom="7dp"
+            android:textSize="11sp" />
+
+    </LinearLayout>
+
+</LinearLayout>

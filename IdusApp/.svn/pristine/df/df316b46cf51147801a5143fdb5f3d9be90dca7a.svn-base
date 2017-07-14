@@ -1,0 +1,50 @@
+package com.gvs.utilidades;
+
+public class Objetive {
+	private String nombre;
+	private String actual;
+	private String visita;
+	private String objetivo;
+	private String porcentaje;
+
+	public String getNombre() {
+		return nombre;
+	}
+
+	public void setNombre(String nombre) {
+		this.nombre = nombre;
+	}
+
+	public String getActual() {
+		return actual;
+	}
+
+	public void setActual(String actual) {
+		this.actual = actual;
+	}
+
+	public String getVisita() {
+		return visita;
+	}
+
+	public void setVisita(String visita) {
+		this.visita = visita;
+	}
+	
+	public String getObjetivo() {
+		return objetivo;
+	}
+
+	public void setObjetivo(String objetivo) {
+		this.objetivo = objetivo;
+	}
+
+	public String getPorcentaje() {
+		return porcentaje;
+	}
+
+	public void setPorcentaje(String porcentaje) {
+		this.porcentaje = porcentaje;
+	}
+
+}

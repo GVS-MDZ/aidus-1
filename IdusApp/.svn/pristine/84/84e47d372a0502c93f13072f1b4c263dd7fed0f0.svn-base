@@ -1,0 +1,14 @@
+package com.gvs.exceptiones;
+
+public class ConectorException extends Exception{
+
+	private static final long serialVersionUID = 1L;
+
+	public ConectorException() {
+
+	}
+
+	public ConectorException(String msg) {
+		super(msg);
+	}
+}

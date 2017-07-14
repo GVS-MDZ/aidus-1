@@ -1,0 +1,55 @@
+package com.gvs.idusapp;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import com.gvs.busquedas.BusquedaArticulos;
+import android.app.Activity;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ListView;
+import android.widget.SimpleAdapter;
+import android.widget.AdapterView.OnItemClickListener;
+
+public class SearchArticleActivity extends Activity {
+	private ListView list;
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_search_article);
+
+		Bundle bun = getIntent().getExtras();
+		final BusquedaArticulos busArt = new BusquedaArticulos(SearchArticleActivity.this);		
+		list = (ListView) findViewById(R.id.list_detalle);
+		
+		llenarListaDos(busArt.buscarProDetalle(bun.getString("DETALLE")));
+		
+		list.setOnItemClickListener(new OnItemClickListener() {
+			
+			public void onItemClick(AdapterView<?> arg0, View v, int position, long id){
+				HashMap<String, String> map = (HashMap<String, String>)list.getItemAtPosition(position);
+				String[] dato01 = map.get("DATO06").toString().split("-");
+				String codigoArticulo = dato01[0].toString().trim();
+				Intent intent = new Intent();
+				intent.setData(Uri.parse(codigoArticulo));
+				setResult(RESULT_OK,intent);
+				finish();
+			}			
+			
+		});
+	}
+	
+	private void llenarListaDos(List<Map<String, String>> lista){
+		if (lista!=null){
+			SimpleAdapter adapter = new SimpleAdapter(this, lista, android.R.layout.simple_list_item_2,
+					new String[] {"DATO05","DATO06"},
+					new int[] {android.R.id.text1,android.R.id.text2});
+			list.setAdapter(adapter);
+		}
+	}
+
+	
+}

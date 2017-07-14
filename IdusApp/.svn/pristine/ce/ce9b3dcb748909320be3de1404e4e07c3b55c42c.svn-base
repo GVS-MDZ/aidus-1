@@ -1,0 +1,21 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.gvs.idusapp.TabCloseDayActivity" >
+  <item
+        android:id="@+id/mail"
+        android:icon="@drawable/mail"
+        android:showAsAction="ifRoom|withText"
+        android:title="@string/menu_cierre_dia"/>
+    <item
+        android:id="@+id/cerrar_sesion"
+        android:orderInCategory="100"
+        android:showAsAction="never"
+        android:title="Salir"/>
+   
+   <item
+        android:id="@+id/sincronizar"
+        android:orderInCategory="100"
+        android:showAsAction="never"
+        android:title="Sincronizar"/>
+
+</menu>

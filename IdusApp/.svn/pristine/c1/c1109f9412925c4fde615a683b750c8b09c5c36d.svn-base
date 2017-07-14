@@ -1,0 +1,69 @@
+package com.gvs.entidades;
+
+public class Vendedor {
+	
+	private int codigoEmpesa;
+	private int codigo;
+	private String nombre;
+	private String pass;
+	private int coberturaBuena;
+	private int coberturaRegular;
+	private int coberturaMuyBuena;
+
+	public int getCodigoEmpesa() {
+		return codigoEmpesa;
+	}
+
+	public void setCodigoEmpesa(int codigoEmpesa) {
+		this.codigoEmpesa = codigoEmpesa;
+	}
+
+	public int getCodigo() {
+		return codigo;
+	}
+
+	public void setCodigo(int codigo) {
+		this.codigo = codigo;
+	}
+
+	public String getNombre() {
+		return nombre;
+	}
+
+	public void setNombre(String nombre) {
+		this.nombre = nombre;
+	}
+
+	public String getPass() {
+		return pass;
+	}
+
+	public void setPass(String pass) {
+		this.pass = pass;
+	}
+
+	public int getCoberturaBuena() {
+		return coberturaBuena;
+	}
+
+	public void setCoberturaBuena(int coberturaBuena) {
+		this.coberturaBuena = coberturaBuena;
+	}
+
+	public int getCoberturaRegular() {
+		return coberturaRegular;
+	}
+
+	public void setCoberturaRegular(int coberturaRegular) {
+		this.coberturaRegular = coberturaRegular;
+	}
+
+	public int getCoberturaMuyBuena() {
+		return coberturaMuyBuena;
+	}
+
+	public void setCoberturaMuyBuena(int coberturaMuyBuena) {
+		this.coberturaMuyBuena = coberturaMuyBuena;
+	}
+
+}

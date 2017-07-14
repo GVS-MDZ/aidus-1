@@ -1,0 +1,40 @@
+package com.gvs.utilidades;
+
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+
+public class DetectorDeConexion {
+	private Context context;
+
+	public DetectorDeConexion(Context context) {
+		this.context = context;
+	}
+
+	public boolean conexionInternet() {
+		ConnectivityManager connectivity = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+		if (connectivity != null) {
+			NetworkInfo[] info = connectivity.getAllNetworkInfo();
+			if (info != null)
+				for (int i = 0; i < info.length; i++)
+					if (info[i].getState() == NetworkInfo.State.CONNECTED) {
+						return true;
+					}
+
+		}
+		return false;
+	}
+
+	public String estadoRedes() {
+		ConnectivityManager connMgr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+		final android.net.NetworkInfo wifi = connMgr.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+		final android.net.NetworkInfo mobile = connMgr.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
+		if (wifi.isAvailable()) {
+			return "WIFI";
+		} else if (mobile.isAvailable()) {
+			return "GPRS-UMTS 3G/4G";
+		} else {
+			return "SIN RED DE DATOS";
+		}
+	}
+}

@@ -1,0 +1,59 @@
+package com.gvs.conectoras;
+
+import java.io.DataInputStream;
+import android.content.Context;
+import com.gvs.busquedas.BusquedaClientes;
+import com.gvs.entidades.Configuracion;
+import com.gvs.entidades.Objetive;
+
+public class ConectorObjXVisita extends ConectorGeneral {
+
+	private int empresa,vendedor;
+	private Context conte;
+	private BusquedaClientes busquedaCliente;
+	
+	public ConectorObjXVisita(Configuracion conf, int empresa, int vendedor,Context conte) {
+		super(conf);
+		this.empresa=empresa;
+		this.vendedor=vendedor;
+		this.conte=conte;
+	}
+	
+	@Override
+	protected String CompletarURL() throws Exception {
+		return "enviarObjXVisitasXVendedor?empresa=" + empresa + "&vendedor="+ vendedor;
+	}
+
+	@Override
+	protected void procesarRespuesta(DataInputStream in)throws Exception {
+		try {
+			int tipoActualizacion=0;
+			busquedaCliente=new BusquedaClientes(conte);
+			busquedaCliente.eliminarObjetivoVisita();
+			while (true){
+				tipoActualizacion=in.readInt();
+				switch (tipoActualizacion) {
+				case 1101:
+					Objetive objetivo = new Objetive();
+					objetivo.setCodigo_cliente(in.readInt());
+					objetivo.setPeriodo(in.readUTF());
+					objetivo.setVenta_anterior(in.readDouble());
+					objetivo.setObjetivo_actual(in.readDouble());
+					objetivo.setCantidad_visitas(in.readInt());
+					objetivo.setVenta_actual(in.readDouble());
+					objetivo.setFecha_actualizacion(in.readLong());
+					objetivo.setPorcentajes(in.readDouble());
+					busquedaCliente.guardarObjetivoVisita(objetivo);				
+				case 1199:
+					break;
+				default:
+					break;
+				}
+			}
+		} catch (Exception ex) {
+			throw new Exception(ex.getMessage());
+		}finally{
+			in.close();
+		}
+	}
+}

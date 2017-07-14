@@ -1,0 +1,48 @@
+package com.gvs.conectoras;
+
+import java.io.DataInputStream;
+
+import android.content.Context;
+import android.database.SQLException;
+import android.database.sqlite.SQLiteDatabase;
+
+import com.gvs.entidades.Configuracion;
+import com.gvs.exceptiones.ConectorException;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+import com.gvs.utilidades.Gain;
+
+public class ConectorCobranza extends ConectorGeneral{
+
+	private Context conte;
+	private Funciones funcion = new Funciones();
+	int empresa;
+	private Gain gain;
+	public ConectorCobranza(Configuracion conf, Context conte,int empresa,Gain gain) {
+		super(conf);
+		this.conte = conte;
+		this.empresa=empresa;
+		this.gain=gain;
+	}
+
+	@Override
+	protected String CompletarURL() throws ConectorException {
+		String strUrl="abmCobranza?empresa=" + empresa +"&vendedor="+gain.getCodigo_vendedor()+"&cliente="+gain.getCodigo_cliente()+"&fechaCelular="+gain.getFecha()+"" +
+				"&clase="+gain.getClase()+"&tipo="+gain.getTipo()+"&sucursal="+gain.getSucursal()+"&numeroComprobante="+gain.getNumero_comprobante()+"" +
+				"&numeroRecibo="+gain.getNumero_recibo()+"&saldo="+gain.getSaldo()+"&importe_pagado="+gain.getImporte_pagado()+"&estado="+gain.getEstado()+"";
+		return strUrl;
+	}
+
+	@Override
+	protected void procesarRespuesta(DataInputStream in)throws ConectorException {
+		try {
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		String Sql = "UPDATE COBRANZA SET ESTADO=1 WHERE FECHA=" +gain.getFecha();
+		db.execSQL(Sql);
+		} catch (SQLException e) {
+			e.printStackTrace();
+			throw new ConectorException(e.getMessage());
+		}
+	}
+}

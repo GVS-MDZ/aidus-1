@@ -1,0 +1,94 @@
+package com.gvs.conectoras;
+
+import java.io.DataInputStream;
+import java.io.IOException;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import com.gvs.entidades.Configuracion;
+import com.gvs.exceptiones.ConectorException;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+
+public class ConectorActualizacionStock extends ConectorGeneral {
+
+	private int lEmpresa;
+	private int lLugar;
+	private Context lCont;
+	
+	public ConectorActualizacionStock(Configuracion conf,int empresa, int lugar, Context cont) {
+		super(conf);
+		lEmpresa=empresa;
+		lLugar=lugar;
+		lCont=cont;
+	}
+
+	@Override
+	protected String CompletarURL() throws ConectorException {
+		// TODO Auto-generated method stub
+		return "ActualizarStockAndroid?empresa=" + lEmpresa + "&lugar=" + lLugar;
+	}
+
+	@Override
+	protected void procesarRespuesta(DataInputStream in)
+			throws ConectorException {
+		int tipoActualizacion=0;
+		Funciones funcion = new Funciones();
+		BaseDeDatos baseDeDatos = new BaseDeDatos(lCont, funcion.BaseDeDatos(), null, funcion.Version());
+		final SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		ContentValues cont = new ContentValues();
+		Cursor cur;
+		try {
+			db.beginTransaction();
+			while (true){
+				tipoActualizacion=in.readInt();
+				String Sql ="";
+				if (tipoActualizacion==1099){
+					break;
+				}
+				switch (tipoActualizacion) {
+				case 1007:
+					cont.clear();
+					cont.put("CODIGO", in.readUTF());
+					cont.put("PRECIO", in.readDouble());
+					cont.put("EXISTENCIA", in.readDouble());
+					cont.put("HAB", devolverBoolean(in.readBoolean()));
+					Sql = "SELECT * FROM ARTICULOS WHERE CODIGO='" + cont.getAsString("CODIGO") + "'";
+					cur = db.rawQuery(Sql,null);
+					if (cur.moveToNext()){
+						db.update("ARTICULOS",cont, "CODIGO='" + cont.getAsString("CODIGO") + "'", null);
+					} 
+					if (cur!=null){
+						cur.close();
+					}
+					break;
+				default:
+					break;
+				}
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new ConectorException(e.getMessage());
+		} catch (Exception e){
+			e.printStackTrace();
+			throw new ConectorException(e.getMessage());
+		} finally {
+			db.endTransaction();
+			try {
+				in.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				throw new ConectorException(e.getMessage());
+			}
+		}
+		
+	}
+
+	private int devolverBoolean(boolean dato){
+		if (dato) { return 1; } else { return 0;}
+	}
+	
+}

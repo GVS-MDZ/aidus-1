@@ -1,0 +1,193 @@
+package com.gvs.idusapp;
+
+import com.gvs.controladores.ControladorPedido;
+import com.gvs.controladores.ControladorUsuario;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+import android.app.Activity;
+import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.widget.TextView;
+import android.widget.Toast;
+
+public class OrderDetailFinalActivity extends Activity {
+
+	private TextView lbl_numero_pedido, lbl_numero_final, lbl_fecha,
+			lbl_codigo_cliente, lbl_codigo_vendedor, lbl_cantidad_item,
+			lbl_estado, lbl_fecha_enviado, lbl_internet, lbl_longitud,
+			lbl_latitud, lbl_precision, lbl_proveedor, lbl_observacion;
+
+	private Funciones funcion = new Funciones();
+	private Bundle bun;
+	private int estado = 0;
+	private ControladorUsuario controladorUsuario;
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_order_detail_final);
+		controladorUsuario = new ControladorUsuario();
+		lbl_numero_pedido = (TextView) findViewById(R.id.lbl_numero_pedido);
+		lbl_numero_final = (TextView) findViewById(R.id.lbl_numero_final);
+		lbl_fecha = (TextView) findViewById(R.id.lbl_fecha);
+		lbl_codigo_cliente = (TextView) findViewById(R.id.lbl_codigo_cliente);
+		lbl_codigo_vendedor = (TextView) findViewById(R.id.lbl_codigo_vendedor);
+		lbl_cantidad_item = (TextView) findViewById(R.id.lbl_cantidad_item);
+		lbl_estado = (TextView) findViewById(R.id.lbl_estado);
+		lbl_fecha_enviado = (TextView) findViewById(R.id.lbl_fecha_enviado);
+		lbl_internet = (TextView) findViewById(R.id.lbl_internet);
+		lbl_longitud = (TextView) findViewById(R.id.lbl_longitud);
+		lbl_latitud = (TextView) findViewById(R.id.lbl_latitud);
+		lbl_precision = (TextView) findViewById(R.id.lbl_precision);
+		lbl_proveedor = (TextView) findViewById(R.id.lbl_proveedor);
+		lbl_observacion = (TextView) findViewById(R.id.lbl_observacion);
+		
+
+	    bun = getIntent().getExtras();
+		lbl_numero_pedido.setText("NUMERO DE PEDIDO: "+ funcion.format(bun.getLong("NUMERO"), 10));
+		// busco el pedido para presentar los datos
+		BaseDeDatos baseDeDatos = new BaseDeDatos(
+				OrderDetailFinalActivity.this, funcion.BaseDeDatos(), null,
+				funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		String Sql = "SELECT * FROM PEDIDOSCABECERA WHERE NUMERO="
+				+ bun.getLong("NUMERO");
+		Cursor cur = db.rawQuery(Sql, null);
+		if (cur.moveToNext()) {
+			lbl_numero_final.setText("NUMERO FINAL: "+ funcion.format(cur.getLong(cur.getColumnIndex("NUMEROFINAL")), 10));
+			lbl_fecha.setText("FECHA: "+ funcion.dateToString_yyyymmdd_hhmm(cur.getLong(cur.getColumnIndex("FECHA"))));
+			lbl_codigo_cliente.setText("CLIENTE: "+ funcion.format(cur.getInt(cur.getColumnIndex("CODIGOCLIENTE")), 5));
+			if (bun.getInt("CODIGOCLIENTE") == 0) {
+				bun.putInt("CODIGOCLIENTE",cur.getInt(cur.getColumnIndex("CODIGOCLIENTE")));
+				bun.putString("DATO01",cur.getInt(cur.getColumnIndex("CODIGOCLIENTE"))+ " - EDITANDO");
+			}
+			lbl_codigo_vendedor.setText("VENDEDOR: "+ funcion.format(cur.getInt(cur.getColumnIndex("CODIGOVENDEDOR")), 3));
+			lbl_cantidad_item.setText("CANTIDAD DE ITEMS: "+ funcion.format(cur.getInt(cur.getColumnIndex("CANTIDADITEMS")), 2));
+			String estadoD = "";
+			estado = cur.getInt(cur.getColumnIndex("ESTADO"));
+			switch (estado) {
+			case 0:
+				estadoD = "SIN ENVIAR / FINALIZADO";
+				break;
+			case 1:
+				estadoD = "CORRECTO!!! ENVIADO";
+				break;
+			case 2:
+				estadoD = "ANULADO";
+				break;
+			case 10:
+				estadoD = "SIN ENVIAR / EDITABLE";
+				break;
+			case 11:
+				estadoD = "LISTO PARA ENVIAR";
+				break;
+			case 12:
+				estadoD = "ERROR!!! .:ENVIO FRACASADO:. CONSULTAR CON LA ADMINISTRACION SI LLEGO, SI NO LLEGO VOLVER A ENVIAR";
+				break;
+			default:
+				estadoD = "DISCONOCIDO / CONSULTAR";
+				break;
+			}
+			lbl_estado.setText(estadoD);
+			long fechaEnviado = cur.getLong(cur.getColumnIndex("FECHAENVIADO"));
+			if (fechaEnviado > 0) {
+				lbl_fecha_enviado.setText("ENVIADO EL: "+ funcion.dateToString_yyyymmdd_hhmm(fechaEnviado));
+			} else {
+				lbl_fecha_enviado.setText("SIN ENVIAR");
+			}
+			lbl_internet.setText("CONECTADO POR: "+ cur.getString(cur.getColumnIndex("INTERNET")));
+			lbl_latitud.setText("LATITUD: "+ cur.getDouble(cur.getColumnIndexOrThrow("LATITUD")));
+			lbl_longitud.setText("LONGITUD: "+ cur.getDouble(cur.getColumnIndex("LONGITUD")));
+			lbl_precision.setText("PRECISION: "+ cur.getDouble(cur.getColumnIndex("PRECISION")));
+			lbl_proveedor.setText("TOMADA POR: "+ cur.getString(cur.getColumnIndex("PROVEE")));
+			lbl_observacion.setText(cur.getString(cur.getColumnIndex("OBS")));
+		}
+
+	}
+	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		// Inflate the menu; this adds items to the action bar if it is present.
+		getMenuInflater().inflate(R.menu.order_detail_final, menu);
+		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		int id = item.getItemId();
+		switch (id) {
+		case R.id.menu_editar: {
+			if (estado == 10 || estado == 0) {
+				Intent intent = new Intent(OrderDetailFinalActivity.this,RealizeOrderActivity.class);
+				intent.putExtras(bun);
+				startActivity(intent);
+			} else {
+				funcion.MostrarMensajeAceptar(OrderDetailFinalActivity.this, "EDICION","No se puede editar un pedido en el estado actual");
+			}
+			break;
+		}
+		case R.id.menu_anular: {
+			if (estado == 10 || estado == 0 || estado == 12) {
+				ControladorPedido pedido = new ControladorPedido(OrderDetailFinalActivity.this);
+				pedido.anularPedido(bun.getLong("NUMERO"));
+				Toast toast =Toast.makeText(getApplicationContext(),"Pedido Anulado", Toast.LENGTH_SHORT);
+				toast.show();
+				finish();
+			} else {
+				funcion.MostrarMensajeAceptar(OrderDetailFinalActivity.this, "ANULAR","No se puede Anular pedido en el estado actual");
+			}
+			break;
+		}
+		case R.id.menu_finalizar: {
+			if (estado == 10) {
+				ControladorPedido pedido = new ControladorPedido(OrderDetailFinalActivity.this);
+				pedido.finalizarPedido(bun.getLong("NUMERO"));
+				Toast toast =Toast.makeText(getApplicationContext(),"Pedido Finalizado", Toast.LENGTH_SHORT);
+				toast.show();
+				finish();
+			} else {
+				funcion.MostrarMensajeAceptar(OrderDetailFinalActivity.this, "FINALIZAR","No se puede Finalizar pedido en el estado actual");
+			}
+			break;
+		}
+		case R.id.menu_marcar: {
+			if (estado == 10 || estado == 12) {
+				ControladorPedido pedido = new ControladorPedido(OrderDetailFinalActivity.this);
+				pedido.marcarParaEnviarPedido(bun.getLong("NUMERO"));
+				Toast toast =Toast.makeText(getApplicationContext(),"Pedido Marcado", Toast.LENGTH_SHORT);
+				toast.show();
+				finish();
+			} else {
+				funcion.MostrarMensajeAceptar(OrderDetailFinalActivity.this, "MARCAR","No se puede Marcar pedido para enviar en el estado actual");
+			}
+			break;
+		}
+		case R.id.menu_items: {
+			bun.putString("CONSUL-PED", "C");
+			Intent intent = new Intent(OrderDetailFinalActivity.this,OrderDetailActivity.class);
+			intent.putExtras(bun);
+			startActivity(intent);
+			break;
+		}case R.id.cerrar_sesion: {
+			startActivity(new Intent(getBaseContext(), MainActivity.class)
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
+			controladorUsuario.cerrarSesion(this);
+			finish();
+			break;
+		}case R.id.sincronizar:{
+			Intent i = new Intent(this, SyncActivity.class);
+			bun.putString("SINCRONIZACION","GENERAL");
+			i.putExtras(bun);
+			startActivity(i);
+			break;
+		}
+		default:
+			break;
+		}
+		return super.onOptionsItemSelected(item);
+	}
+}

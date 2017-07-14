@@ -1,0 +1,50 @@
+package com.gvs.busquedas;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+
+import com.gvs.entidades.Venta;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+
+public class BusquedaVentaPorDia {
+	private Context conte;
+	private Funciones funcion = new Funciones();
+	
+	public BusquedaVentaPorDia(Context cont){
+		conte=cont;
+	}
+	
+	public void eliminarVentas(){
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+	    SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		String sqlB = "DELETE FROM VENTAXPDIAS";
+		db.execSQL(sqlB);
+	}
+	
+	public void modificarVentasConector(Venta ventas){
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		ContentValues cont = new ContentValues();
+		Cursor cur;
+		cont.clear();
+		cont.put("PERIODO", ventas.getPeriodo());
+		cont.put("DIA", ventas.getDia());
+		cont.put("IMPORTE", ventas.getImporte());
+		cont.put("ACTUALIZACION",ventas.getActualizacion() );
+		
+		String Sql = "SELECT * FROM VENTAXPDIAS WHERE PERIODO='" + ventas.getPeriodo() + "' AND DIA=" + ventas.getDia() ;
+		cur = db.rawQuery(Sql, null);
+		if (cur.moveToNext()) {
+			db.update("VENTAXPDIAS", cont, "PERIODO='" + ventas.getPeriodo() + "' AND DIA=" + ventas.getDia(), null);
+		} else {
+			db.insert("VENTAXPDIAS", null, cont);
+		}
+		if (cur!=null) {
+			cur.close();
+		}
+	}
+		
+}

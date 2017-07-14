@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal" >
+
+    <ImageView
+        android:id="@+id/img_estado_encuesta"
+        android:layout_width="wrap_content"
+        android:layout_height="37dp"
+        android:paddingLeft="3dp"
+        android:paddingTop="7dp"
+        android:src="@drawable/verde" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:orientation="vertical" >
+
+        <TextView
+            android:id="@+id/lbl_nombre_escuesta"
+            android:layout_width="match_parent"
+            android:layout_height="25dp"
+            android:layout_weight="0.80"
+            android:ellipsize="end"
+            android:gravity="bottom"
+            android:maxLines="1"
+            android:paddingLeft="5dp"
+            android:singleLine="true"
+            android:text="Nombre encuesta"
+            android:textSize="12dp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/lbl_fecha_encuesta"
+            android:layout_width="match_parent"
+            android:layout_height="25dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:paddingLeft="5dp"
+            android:singleLine="true"
+            android:text="fecha encuesta"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+</LinearLayout>

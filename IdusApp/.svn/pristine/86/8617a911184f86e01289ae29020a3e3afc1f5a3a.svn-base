@@ -1,0 +1,42 @@
+package com.gvs.conectoras;
+
+import java.io.DataInputStream;
+import android.content.Context;
+import com.gvs.busquedas.BusquedaSincronizacion;
+import com.gvs.entidades.Configuracion;
+import com.gvs.entidades.Sincronizador;
+
+public class ConectorSincronizador extends ConectorGeneral {
+
+	private Context conte;
+	private Sincronizador syncro;
+	private BusquedaSincronizacion busquedaSincronizacion;
+	
+	public ConectorSincronizador(Configuracion conf, Context cont,int empresa, Sincronizador sincro){
+		super(conf);
+		conte=cont;
+		syncro=sincro;
+	}
+
+	@Override
+	protected String CompletarURL() throws Exception {
+		String strURL = "insertarSyncronizacion?empresa=" + syncro.getCodigoEmpresa() + 
+				"&vendedor=" + syncro.getCodigoVendedor() + "&fechaInicio=" + syncro.getFechaIncio() +
+				"&fecha=" + syncro.getFecha() + "&modo=" + syncro.getModo() + "&internet=" + syncro.getInternet();
+		return strURL;
+	}
+
+	@Override
+	protected void procesarRespuesta(DataInputStream in)throws Exception {
+		try {
+			busquedaSincronizacion=new BusquedaSincronizacion(conte);
+			busquedaSincronizacion.modificarSincronizacionConector(syncro);
+		} catch (Exception e) {
+			throw new Exception(e.getMessage());
+		}finally{
+			in.close();
+		}
+	}
+	}
+	
+	

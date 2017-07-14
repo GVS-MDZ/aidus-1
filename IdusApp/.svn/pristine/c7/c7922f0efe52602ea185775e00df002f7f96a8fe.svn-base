@@ -1,0 +1,47 @@
+package com.gvs.busquedas;
+
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+
+public class BusquedaVendedor {
+	private Context conte;
+	private Funciones funcion = new Funciones();
+
+	public BusquedaVendedor(Context cont) {
+		conte=cont;
+	}
+	
+	public String buscarObjetivoVendedor(int numeroEmpresa,int numeroVendedor) {
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		
+		String respuesta="";
+		String sql = "SELECT COBREGULAR,COBBUENA,COBMUYBUENA FROM VENDEDOR WHERE CODIGOEMPRESA=" + numeroEmpresa + " AND CODIGO=" +numeroVendedor;
+		Cursor cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			respuesta = cur.getInt(cur.getColumnIndex("COBREGULAR")) + "~" + cur.getInt(cur.getColumnIndex("COBBUENA")) + "~" + cur.getInt(cur.getColumnIndex("COBMUYBUENA"));			
+		} else {
+			respuesta="sd";
+		}
+		return respuesta;
+	}
+	
+	public String buscarVendedor(int numeroEmpresa,int numeroVendedor) {
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		
+		String respuesta="";
+		String sql = "SELECT NOMBRE FROM VENDEDOR WHERE CODIGOEMPRESA=" + numeroEmpresa + " AND CODIGO=" +numeroVendedor;
+		Cursor cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			respuesta =cur.getString(cur.getColumnIndex("NOMBRE"));			
+		} else {
+			respuesta="Sin Nombre";
+		}
+		return respuesta;
+	}
+
+}

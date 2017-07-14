@@ -1,0 +1,40 @@
+package com.gvs.busquedas;
+
+import java.util.Date;
+
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+
+public class BusquedaNoAtendidos {
+	private Context conte;
+	private Funciones funcion=new Funciones();
+	
+	public BusquedaNoAtendidos(Context cont) {
+		conte=cont;		
+	}
+	
+	public int buscarClienteNoAtendido(int codigoCliente){		
+		try {
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		Cursor cur = null;
+		int cantidad=0;
+			Date fecha = new Date();
+			String hoyTexto = funcion.dateToString_yyyymmdd(fecha.getTime());
+			Date fechaINI = funcion.stringToDate(hoyTexto);
+			String Sql = "SELECT * FROM NOATENDIDOS " +
+					"WHERE CODIGOCLIENTE=" + codigoCliente+" AND FECHA>="+fechaINI.getTime();
+			cur = db.rawQuery(Sql, null);
+				while (cur.moveToNext()){
+					cantidad++;
+				}		
+			return cantidad;			
+		} catch (Exception e) {
+			return 0;
+		}
+	}
+
+}

@@ -1,0 +1,121 @@
+package com.gvs.idusapp;
+
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+import android.app.Activity;
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.os.Bundle;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
+
+public class ConfigurationActivity extends Activity {
+	private Button boGrabar;
+	private EditText txt_servidor,txt_puerto,txt_items;
+	private CheckBox chCierreDiaCompleto,chMuestrasugeridos,chServicioGEOPOS,chVerOtroDia,chDescuento;
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_configuration);
+
+		Funciones funciones = new Funciones();
+		boGrabar = (Button) findViewById(R.id.btn_aceptar);
+		txt_servidor = (EditText) findViewById(R.id.txt_servidor);
+		txt_puerto = (EditText) findViewById(R.id.txt_puerto);
+		txt_items = (EditText) findViewById(R.id.txt_items);
+		chCierreDiaCompleto = (CheckBox) findViewById(R.id.chk_cierre_dia);
+		chMuestrasugeridos = (CheckBox) findViewById(R.id.chk_muestra_sugeridos);
+		chServicioGEOPOS = (CheckBox) findViewById(R.id.chk_servicio_geo);
+		chVerOtroDia = (CheckBox) findViewById(R.id.chk_ver_dia);
+		chDescuento = (CheckBox) findViewById(R.id.chk_permite_descuento);
+
+		BaseDeDatos baseDeDatos = new BaseDeDatos(this,funciones.BaseDeDatos(), null, funciones.Version());
+		final SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		String sql = "SELECT * FROM CONFIGURACION";
+		Cursor cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			txt_servidor.setText(cur.getString(cur.getColumnIndex("NOMBRESRV")));
+			txt_puerto.setText(cur.getString(cur.getColumnIndex("PUERTO")));
+			txt_items.setText(cur.getString(cur.getColumnIndex("CANTIDADITEMS")));
+			if (cur.getInt(cur.getColumnIndex("DIACOMPLETO")) == 1) {
+				chCierreDiaCompleto.setChecked(true);
+			} else {
+				chCierreDiaCompleto.setChecked(false);
+			}
+			if (cur.getInt(cur.getColumnIndex("MUESTRASUGERIDOS")) == 1) {
+				chMuestrasugeridos.setChecked(true);
+			} else {
+				chMuestrasugeridos.setChecked(false);
+			}
+			if (cur.getInt(cur.getColumnIndex("SERVICIOGEO")) == 1) {
+				chServicioGEOPOS.setChecked(true);
+			} else {
+				chServicioGEOPOS.setChecked(false);
+			}
+			if (cur.getInt(cur.getColumnIndex("OTRODIA")) == 1) {
+				chVerOtroDia.setChecked(true);
+			} else {
+				chVerOtroDia.setChecked(false);
+			}
+			if (cur.getInt(cur.getColumnIndex("DESCUENTO")) == 1) {
+				chDescuento.setChecked(true);
+			} else {
+				chDescuento.setChecked(false);
+			}
+		}
+
+		boGrabar.setOnClickListener(new OnClickListener() {
+
+			@Override
+			public void onClick(View v) {
+				// TODO Auto-generated method stub
+				ContentValues cont = new ContentValues();
+				String sql = "SELECT * FROM CONFIGURACION";
+				Cursor cur = db.rawQuery(sql, null);
+				if (cur.moveToNext()) {
+					if (txt_puerto.getText().toString().trim().equals("")) {
+						txt_puerto.setText("8080");
+					}
+					if (txt_items.getText().toString().trim().equals("")) {
+						txt_items.setText("35");
+					}
+					if (Integer.parseInt(txt_items.getText().toString().trim()) > 35) {
+						txt_items.setText("35");
+					}
+					if (Integer.parseInt(txt_items.getText().toString().trim()) < 5) {
+						txt_items.setText("13");
+					}
+					int puerto = Integer.parseInt(txt_puerto.getText().toString());
+					int items = Integer.parseInt(txt_items.getText().toString());
+					cont.put("NOMBRESRV", txt_servidor.getText().toString());
+					cont.put("PUERTO", puerto);
+					cont.put("DIACOMPLETO", chCierreDiaCompleto.isChecked());
+					cont.put("MUESTRASUGERIDOS", chMuestrasugeridos.isChecked());
+					cont.put("SERVICIOGEO", chServicioGEOPOS.isChecked());
+					cont.put("OTRODIA", chVerOtroDia.isChecked());
+					cont.put("CANTIDADITEMS", items);
+					cont.put("DESCUENTO", chDescuento.isChecked());
+					db.update("CONFIGURACION", cont, "", null);
+				} else {
+					int puerto = Integer.parseInt(txt_puerto.getText().toString());
+					int items = Integer.parseInt(txt_items.getText().toString());
+					cont.put("NOMBRESRV", txt_servidor.getText().toString());
+					cont.put("PUERTO", puerto);
+					cont.put("DIACOMPLETO", chCierreDiaCompleto.isChecked());
+					cont.put("MUESTRASUGERIDOS", chMuestrasugeridos.isChecked());
+					cont.put("SERVICIOGEO", chServicioGEOPOS.isChecked());
+					cont.put("OTRODIA", chVerOtroDia.isChecked());
+					cont.put("CANTIDADITEMS", items);
+					cont.put("DESCUENTO", chDescuento.isChecked());
+					db.insert("CONFIGURACION", null, cont);
+				}
+				finish();
+			}
+		});
+	}
+}

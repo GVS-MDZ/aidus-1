@@ -1,0 +1,52 @@
+package com.gvs.conectoras;
+
+import java.io.DataInputStream;
+
+import android.content.Context;
+//import android.util.Log;
+
+import com.gvs.busquedas.BusquedaConfiguracion;
+import com.gvs.entidades.Configuracion;
+
+public class ConectorControlDeuda extends ConectorGeneral {
+
+	private int empresa;
+	private Context conte;
+	private Configuracion configuracion;
+	private BusquedaConfiguracion busquedaConfiguracion;
+
+	public ConectorControlDeuda(Configuracion conf,int empresa,Context context) {
+		super(conf);
+		this.empresa=empresa;
+		conte = context;
+
+	}
+
+	@Override
+	protected String CompletarURL() {
+		return "buscarControles?empresa="+empresa;
+	}
+
+	@Override
+	protected void procesarRespuesta(DataInputStream in)throws Exception {
+		try {
+			configuracion=new  Configuracion();
+			//Log.e("ACA","A");
+			configuracion.setAiuds(in.readInt());
+			//Log.e("ACA","B");
+			configuracion.setControl_deuda(in.readInt());
+			//Log.e("ACA","C");
+			configuracion.setDia_contol((in.readInt()));
+			//Log.e("ACA","D");
+			busquedaConfiguracion=new BusquedaConfiguracion(conte);
+			//Log.e("ACA","E");
+			busquedaConfiguracion.modificarConfiguracionCenector(configuracion);
+			//Log.e("ACA","F");
+		} catch (Exception e) {
+			throw new Exception(e.getMessage());
+		} finally {	
+			in.close();	
+		}
+	}
+
+}

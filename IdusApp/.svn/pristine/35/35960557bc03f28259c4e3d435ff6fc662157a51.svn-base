@@ -1,0 +1,341 @@
+package com.gvs.busquedas;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+
+import com.gvs.entidades.Client;
+import com.gvs.entidades.Objetive;
+import com.gvs.idusapp.R;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+
+public class BusquedaClientes {
+	private Context conte;
+	private Funciones funcion = new Funciones();
+	private BaseDeDatos baseDeDatos;
+	private SQLiteDatabase db;
+	private Cursor cur;
+	private String Sql="";
+	
+	public BusquedaClientes(Context cont){
+		conte=cont;
+		baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		db = baseDeDatos.getReadableDatabase();
+	}
+		
+	public List<Client> buscarClientesActualizados() throws Exception{
+		try{
+			List<Client> list_client = new ArrayList<Client>();
+			Sql = "SELECT * FROM CLIENTES WHERE EDITADO=1";
+			cur = db.rawQuery(Sql, null);
+			Client client;
+			if (cur.getColumnCount()>0){
+				while (cur.moveToNext()){
+					 client=new Client();
+					 client.setCodigo(cur.getInt(cur.getColumnIndex("CODIGO")));
+		     		 client.setLatitud(cur.getDouble(cur.getColumnIndex("LATITUD")));
+		     		 client.setLongitud(cur.getDouble(cur.getColumnIndex("LONGITUD")));
+		     		 list_client.add(client);
+				}
+			}
+			return list_client;
+		} catch (Exception e) {
+			throw new Exception(e.getMessage());
+		}
+	}
+	
+	public Client buscarCliente(int codigo){
+		try{
+			Sql = "SELECT * FROM CLIENTES WHERE CODIGO="+codigo;
+			cur = db.rawQuery(Sql, null);
+			Client cliente=null;
+			if (cur.getColumnCount()>0){
+				while (cur.moveToNext()){
+					 cliente=new Client();
+					 cliente.setCodigo(cur.getInt(cur.getColumnIndex("CODIGO")));
+				     cliente.setName(cur.getString(cur.getColumnIndex("NOMBRE")));
+				     cliente.setAddress(cur.getString(cur.getColumnIndex("DOMICILIO")));
+				     cliente.setCanal(cur.getString(cur.getColumnIndex("CANAL")));
+				     cliente.setLocalidad(cur.getString(cur.getColumnIndex("LOCALIDAD")));
+				     cliente.setObservaciones(cur.getString(cur.getColumnIndex("OBSERVACIONES")));
+				     cliente.setProvincia(cur.getString(cur.getColumnIndex("PROVINCIA")));
+				     cliente.setResponsabilidad(cur.getString(cur.getColumnIndex("RESPONSABILIDAD")));
+				     cliente.setTelefono(cur.getString(cur.getColumnIndex("TELEFONO")));
+				     cliente.setSaldo(cur.getDouble(cur.getColumnIndex("SALDO")));	
+		     		 cliente.setLatitud(cur.getDouble(cur.getColumnIndex("LATITUD")));
+		     		 cliente.setLongitud(cur.getDouble(cur.getColumnIndex("LONGITUD")));
+				}
+			}		
+			return cliente;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	public Objetive buscarObjetivoPorVisita(int codigoCliente)throws Exception{
+		try{
+			Sql = "SELECT * FROM OBJXVISITA WHERE CODIGOCLIENTE=" + codigoCliente + " AND PERIODO='" + funcion.dateToString_MMYYYY(new java.util.Date().getTime()) + "'";
+			cur = db.rawQuery(Sql, null);
+			Objetive objetivo=null;
+			if (cur.getColumnCount()>0){
+				while (cur.moveToNext()){
+				objetivo=new Objetive();
+				objetivo.setCantidad_visitas(cur.getDouble(cur.getColumnIndex("CAN_VIS")));
+				objetivo.setCodigo_cliente(codigoCliente);
+				objetivo.setFecha_actualizacion(cur.getLong(cur.getColumnIndex("FEC_ACT")));
+				objetivo.setObjetivo_actual(cur.getDouble(cur.getColumnIndex("OBJ_ACT")));
+				objetivo.setPeriodo(cur.getString(cur.getColumnIndex("PERIODO")));
+				objetivo.setPorcentajes(cur.getDouble(cur.getColumnIndex("PORC")));
+				objetivo.setVenta_actual(cur.getDouble(cur.getColumnIndex("VTA_ACT")));
+				objetivo.setVenta_anterior(cur.getDouble(cur.getColumnIndex("VTA_ANT")));
+				}
+			}
+			return objetivo;
+		}catch(Exception ex){
+			throw new Exception(ex.getMessage());	
+		}
+	}
+	
+	public List<Objetive> buscarObjetivosPorVisita(int dia,int vendedor)throws Exception{
+		try {
+			if(dia>0){
+			 Sql = "SELECT C.CODIGO,C.NOMBRE,O.OBJ_ACT,O.CAN_VIS,O.PORC FROM CLIENTES AS C "
+						+ "INNER JOIN VISITAS AS V ON C.CODIGO=V.CODIGOCLIENTE "
+						+ "INNER JOIN OBJXVISITA AS O ON C.CODIGO=O.CODIGOCLIENTE "
+						+ "WHERE C.CODIGOVENDEDOR="+ vendedor+ " AND SUBSTR(V.DIAS,"+dia+ ",1)='"+ dia+ "' "
+						+ "AND C.CODIGOVENDEDOR=" + vendedor + " AND HAB=1";
+			}else{
+			 Sql = "SELECT C.CODIGO,C.NOMBRE,O.OBJ_ACT,O.CAN_VIS,O.PORC FROM CLIENTES AS C "
+						+ "INNER JOIN VISITAS AS V ON C.CODIGO=V.CODIGOCLIENTE "
+						+ "INNER JOIN OBJXVISITA AS O ON C.CODIGO=O.CODIGOCLIENTE "
+						+ "WHERE C.CODIGOVENDEDOR="+ vendedor+ " AND V.DIAS IN('0000000','8888888','9999999') "
+						+ "AND C.CODIGOVENDEDOR=" + vendedor + " AND HAB=1";
+			}
+			
+			cur = db.rawQuery(Sql, null);
+			List<Objetive>lista=null;
+			Objetive objetive;
+			if (cur.getCount() > 0) {
+				lista=new ArrayList<Objetive>();
+				while (cur.moveToNext()) {
+					objetive=new Objetive();
+					double objXVisita = 0;
+					if (cur.getDouble(cur.getColumnIndex("CAN_VIS")) > 0) {
+						objXVisita = cur.getDouble(cur.getColumnIndex("OBJ_ACT"))/ cur.getDouble(cur.getColumnIndex("CAN_VIS"));
+					}
+					objetive.setCodigo_cliente(cur.getInt(cur.getColumnIndex("CODIGO")));
+					objetive.setNombre(cur.getString(cur.getColumnIndex("NOMBRE")));
+					objetive.setActual(" Objetivo actual=$"+ funcion.formatDecimal(cur.getDouble(cur.getColumnIndex("OBJ_ACT")),2));
+					objetive.setVisita(" Cantidad de visitas="+ cur.getDouble(cur.getColumnIndex("CAN_VIS")));
+					objetive.setObjetivo(" Objetivo por visita=$" + funcion.formatDecimal(objXVisita,2));
+					objetive.setPorcentaje(" Avance="+ cur.getDouble(cur.getColumnIndex("PORC"))+"%");
+					lista.add(objetive);
+				}	
+			}
+			return lista;
+		} catch (Exception ex) {
+			throw new Exception(ex.getMessage());	
+		}finally{
+			if(cur!=null){
+				cur.close();
+			}
+		}
+	}
+	
+	public List<Client> buscarClientes(int dia, int sOrden,int lVendedor) throws Exception{	
+		List<Client> list = new ArrayList<Client>();
+		String condicion = "";
+		String orden = "";
+		Client client;
+		BusquedaPedidos busPed;
+		BusquedaNoAtendidos busmotivo;
+		try {
+			if (dia == 0) {
+				condicion = " WHERE C.CODIGOVENDEDOR=" + lVendedor + " AND V.DIAS IN('0000000','8888888','9999999') AND HAB=1";
+			} else {
+				condicion = " WHERE SUBSTR(V.DIAS," + dia + ",1)='" + dia+ "' AND C.CODIGOVENDEDOR=" + lVendedor + " AND HAB=1";
+			}
+			switch (sOrden) {
+			case 0:
+				orden = " ORDER BY V.ORDEN";
+				break;
+			case 1:
+				orden = " ORDER BY C.NOMBRE";
+				break;
+			case 2:
+				orden = " ORDER BY C.LOCALIDAD,C.DOMICILIO";
+				break;
+			default:
+				break;
+			}
+		
+			Sql = "SELECT C.CODIGO,C.NOMBRE,C.DOMICILIO,C.LOCALIDAD,C.CODIGOLISTAPRECIO FROM CLIENTES AS C "
+					+ "INNER JOIN VISITAS AS V ON C.CODIGO=V.CODIGOCLIENTE"+ condicion + orden;
+			cur = db.rawQuery(Sql, null);
+			if (cur.getCount() > 0) {
+				while (cur.moveToNext()) {
+					client= new Client();
+					client.setName(cur.getString(cur.getColumnIndex("NOMBRE")));
+					client.setCodigo(cur.getInt(cur.getColumnIndex("CODIGO")));
+					busPed = new BusquedaPedidos(conte);
+					if (busPed.devolverCantidadVendidosXCliente(dia,cur.getInt(cur.getColumnIndex("CODIGO"))) > 0) {
+						client.setIcon(R.drawable.verde);
+					} else {
+						busmotivo = new BusquedaNoAtendidos(conte);
+						if (busmotivo.buscarClienteNoAtendido(cur.getInt(cur.getColumnIndex("CODIGO"))) > 0) {
+							client.setIcon(R.drawable.rojo);
+						} else {
+							client.setIcon(R.drawable.amarillo);
+						}
+					}
+					client.setAddress(cur.getString(cur.getColumnIndex("DOMICILIO"))+ " ("+ cur.getString(cur.getColumnIndex("LOCALIDAD"))+ ")");
+					list.add(client);
+				}
+			}
+			return list;
+		} catch (Exception e) {
+			throw new Exception(e.getMessage());
+		} finally {
+			if(cur!=null){
+				cur.close();
+			}
+		}
+		
+	}
+	
+	public int buscarClienteSinMotivosNoVenta(int dia,int lVendedor)throws Exception{
+		try {
+			BusquedaPedidos busPed;
+			BusquedaNoAtendidos busmotivo;
+			String condicion = "";
+			if (dia == 0) {
+				condicion = " WHERE C.CODIGOVENDEDOR=" + lVendedor + " AND V.DIAS IN('0000000','8888888','9999999') AND HAB=1";
+			} else {
+				condicion = " WHERE SUBSTR(V.DIAS," + dia + ",1)='" + dia
+						+ "' AND C.CODIGOVENDEDOR=" + lVendedor + " AND HAB=1";
+			}
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			Sql = "SELECT C.CODIGO,C.NOMBRE,C.DOMICILIO,C.LOCALIDAD,C.CODIGOLISTAPRECIO FROM CLIENTES AS C "
+					+ "INNER JOIN VISITAS AS V ON C.CODIGO=V.CODIGOCLIENTE"
+					+ condicion;
+			cur = db.rawQuery(Sql, null);
+			int contador=0;
+			if (cur.getCount() > 0) {
+				while (cur.moveToNext()) {
+					busPed = new BusquedaPedidos(conte);
+					if (busPed.devolverCantidadVendidosXCliente(dia,cur.getInt(cur.getColumnIndex("CODIGO"))) > 0) {		
+					} else {
+						busmotivo = new BusquedaNoAtendidos(conte);
+						if (busmotivo.buscarClienteNoAtendido(cur.getInt(cur.getColumnIndex("CODIGO"))) > 0) {
+						} else {
+							contador=contador+1;
+						}
+					}	
+				}
+			}
+			return contador;
+		} catch (Exception e) {
+			throw new Exception(e.getMessage());
+		} finally {
+			if (cur != null) {
+				cur.close();
+			}
+		}
+		
+	}
+	
+	public List<Client> buscarClientesLocalizados(int dia,int vendedor) throws Exception{
+		try{
+			if(dia>0){
+				 Sql = "SELECT * FROM CLIENTES AS C INNER JOIN VISITAS AS V ON C.CODIGO=V.CODIGOCLIENTE " +
+						 "WHERE SUBSTR(V.DIAS," + dia + ",1)='" + dia+"' AND C.CODIGOVENDEDOR=" + vendedor + " AND HAB=1 AND LATITUD !=0 AND LONGITUD!=0 ";
+			}else{
+				 Sql = "SELECT * FROM CLIENTES AS C INNER JOIN VISITAS AS V ON C.CODIGO=V.CODIGOCLIENTE " +
+						 "WHERE V.DIAS IN('0000000','8888888','9999999') AND C.CODIGOVENDEDOR=" + vendedor + " AND HAB=1 AND LATITUD !=0 AND LONGITUD!=0 ";
+			}
+			cur = db.rawQuery(Sql, null);
+			List<Client> list_client=null;
+			Client cliente;
+			if (cur.getColumnCount()>0){
+				while (cur.moveToNext()){
+					 list_client = new ArrayList<Client>();
+					 cliente=new Client();
+					 cliente.setCodigo(cur.getInt(cur.getColumnIndex("CODIGO")));
+				     cliente.setName(cur.getString(cur.getColumnIndex("NOMBRE")));
+				     cliente.setAddress(cur.getString(cur.getColumnIndex("DOMICILIO")));
+				     cliente.setCanal(cur.getString(cur.getColumnIndex("CANAL")));
+				     cliente.setLocalidad(cur.getString(cur.getColumnIndex("LOCALIDAD")));
+				     cliente.setObservaciones(cur.getString(cur.getColumnIndex("OBSERVACIONES")));
+				     cliente.setProvincia(cur.getString(cur.getColumnIndex("PROVINCIA")));
+				     cliente.setResponsabilidad(cur.getString(cur.getColumnIndex("RESPONSABILIDAD")));
+				     cliente.setTelefono(cur.getString(cur.getColumnIndex("TELEFONO")));
+				     cliente.setSaldo(cur.getDouble(cur.getColumnIndex("SALDO")));	
+		     		 cliente.setLatitud(cur.getDouble(cur.getColumnIndex("LATITUD")));
+		     		 cliente.setLongitud(cur.getDouble(cur.getColumnIndex("LONGITUD")));
+		     		 list_client.add(cliente);
+				}
+			}
+			return list_client;
+		} catch (Exception e) {
+			throw new Exception(e.getMessage());
+		}finally{
+			if (cur != null) {
+				cur.close();
+			}
+		}
+	}
+	
+	public void guardarDatosGps(double latitud,double longitud,int cliente)throws Exception{
+		try{
+			Sql = "UPDATE CLIENTES SET LATITUD="+ latitud + ",LONGITUD="+ longitud + ",EDITADO=1 WHERE CODIGO=" + cliente;
+			db.execSQL(Sql);
+		}catch(Exception ex){
+			throw new Exception(ex.getMessage());
+		}
+	}
+	
+	public void eliminarObjetivoVisita()throws Exception{
+		try{
+		Sql = "DELETE FROM OBJXVISITA";
+		db.execSQL(Sql);
+		}catch(Exception ex){
+			throw new Exception(ex.getMessage());
+		}
+	}
+	
+	public void guardarObjetivoVisita(Objetive objetivo )throws Exception{
+		try{
+			ContentValues cont = new ContentValues();
+			cont.clear();
+			cont.put("CODIGOCLIENTE", objetivo.getCodigo_cliente());
+			cont.put("PERIODO", objetivo.getPeriodo());
+			cont.put("VTA_ANT", objetivo.getVenta_anterior());
+			cont.put("OBJ_ACT", objetivo.getObjetivo_actual());
+			cont.put("CAN_VIS", objetivo.getCantidad_visitas());
+			cont.put("VTA_ACT", objetivo.getVenta_actual());
+			cont.put("FEC_ACT", objetivo.getFecha_actualizacion());
+			cont.put("PORC", objetivo.getPorcentaje());
+	
+			Sql = "SELECT * FROM OBJXVISITA WHERE CODIGOCLIENTE=" + objetivo.getCodigo_cliente() + " AND PERIODO='" + objetivo.getPeriodo() + "'";
+			cur = db.rawQuery(Sql, null);
+			if (cur.moveToNext()) {
+				db.update("OBJXVISITA", cont, "CODIGOCLIENTE="+ objetivo.getCodigo_cliente() + " AND PERIODO='" + objetivo.getPeriodo()+"'", null);
+			} else {
+				db.insert("OBJXVISITA", null, cont);
+			}		
+		}catch(Exception ex){
+			throw new Exception(ex.getMessage());
+		}finally{
+			if (cur!=null) {
+				cur.close();
+			}
+		}
+	}	
+	
+}

@@ -1,0 +1,163 @@
+package com.gvs.busquedas;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+
+import com.gvs.entidades.Gain;
+import com.gvs.entidades.Voucher;
+import com.gvs.idusapp.R;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+
+public class BusquedaComprobantes {
+	private Context conte;
+	private double total=0;
+	private Funciones funcion = new Funciones();
+	
+	public BusquedaComprobantes(Context cont) {
+		conte=cont;		
+	}
+	
+    public double getTotal() {
+		return total;
+	}
+
+	public void setTotal(double total) {
+		this.total = total;
+	}
+
+	public List<Voucher> buscarComprobantesPorClientes(int codigoCliente)throws Exception{
+		this.total=0;
+		try{
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		String Sql = "SELECT * FROM COMPROBANTESVENTAS WHERE CODIGOCLIENTE=" + codigoCliente +" ORDER BY FECHA,CLASE,TIPO,SUCURSAL,NUMERO";
+		Cursor cur = db.rawQuery(Sql, null);
+		List<Voucher> list=null;
+		Voucher  voucher;
+		if (cur.getCount()>0){
+			list=new ArrayList<Voucher>();
+			while (cur.moveToNext()){
+				voucher=new Voucher();
+				voucher.setClase(cur.getString(cur.getColumnIndex("CLASE")));
+				voucher.setTipo(cur.getString(cur.getColumnIndex("TIPO")));
+				voucher.setSucursal(cur.getInt(cur.getColumnIndex("SUCURSAL")));
+				voucher.setNumero(cur.getInt(cur.getColumnIndex("NUMERO")));
+				voucher.setComprobante(cur.getString(cur.getColumnIndex("CLASE")) + " - " 
+				+ cur.getString(cur.getColumnIndex("TIPO"))+ " - " 
+			    + funcion.autocompletarNumero(String.valueOf(cur.getInt(cur.getColumnIndex("SUCURSAL"))),4) + " - " 
+			    + funcion.autocompletarNumero(String.valueOf(cur.getInt(cur.getColumnIndex("NUMERO"))),8));
+				voucher.setFecha(funcion.dateToString_yyyymmdd_hhmm(cur.getLong(cur.getColumnIndex("FECHA"))));
+				
+				voucher.setEstado(cur.getInt(cur.getColumnIndex("ESTADO")));
+				if(cur.getInt(cur.getColumnIndex("ESTADO"))==0){
+					voucher.setIcon(R.drawable.amarillo);
+				}else{
+					voucher.setIcon(R.drawable.verde);
+				}
+				if(cur.getString(cur.getColumnIndex("CLASE")).equals("FT") || cur.getString(cur.getColumnIndex("CLASE")).equals("CI") || cur.getString(cur.getColumnIndex("CLASE")).equals("ND"))
+				{
+					if(voucher.getEstado()==0){
+						String Sql2 = "SELECT * FROM COBRANZA WHERE CLASE='"+voucher.getClase()+"' AND TIPO='"+voucher.getTipo()+"' AND SUCURSAL="+voucher.getSucursal()+" AND NUMERO="+voucher.getNumero()+" AND ESTADO=0";
+						Cursor cur2 = db.rawQuery(Sql2, null);
+						double pagado=0;
+						if (cur2.getColumnCount()>0){
+							while (cur2.moveToNext()){
+					     		pagado=pagado+ cur2.getDouble(cur2.getColumnIndex("IMPORTEPAGADO"));
+							}
+						}
+						total+=cur.getDouble(cur.getColumnIndex("SALDO"))-pagado;
+						double calculo=cur.getDouble(cur.getColumnIndex("SALDO"))-pagado;
+						voucher.setSaldo(funcion.formatDecimal(calculo,2));
+					}else{
+						total+=cur.getDouble(cur.getColumnIndex("SALDO"));	
+						voucher.setSaldo(funcion.formatDecimal((cur.getDouble(cur.getColumnIndex("SALDO"))),2));
+					}
+				}else{
+					total-=cur.getDouble(cur.getColumnIndex("SALDO"));
+					voucher.setSaldo(funcion.formatDecimal((cur.getDouble(cur.getColumnIndex("SALDO"))),2));
+				}
+			    list.add(voucher);
+			}
+		}
+		return list;
+		}catch(Exception ex){
+			throw new Exception(ex.getMessage());
+		}
+	}
+	
+	public int buscarComprobantesPorPeriodo(int cliente,int periodo){
+		try{
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			
+			Date hoy=new Date();
+			Date antes=new Date();          
+            Calendar calendar_hasta = Calendar.getInstance();
+            calendar_hasta.setTime(hoy);//Seteamos el calendario con la fecha seleccionada
+            calendar_hasta.add(Calendar.DATE, -periodo);//Agregamos 1 dia para que la consulta sea menor al dia siguiente
+            antes = calendar_hasta.getTime();
+			String Sql = "SELECT * FROM COMPROBANTESVENTAS WHERE  CODIGOCLIENTE=" + cliente +" AND CLASE IN ('FT','ND','NC','CI') AND FECHA<"+hoy.getTime()+" AND FECHA>="+antes.getTime();
+			Cursor cur = db.rawQuery(Sql, null);
+			int contador=0;
+			if (cur.getColumnCount()>0){
+				while (cur.moveToNext()){
+					contador++;
+				}
+			}
+			return contador;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return 0;
+		}
+	}
+	
+	public String buscarComprobantesMasAntiguo(int cliente,int periodo){
+		try{
+			String comprobante="";
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			
+			Date hoy=new Date();
+			Date antes=new Date();          
+            Calendar calendar_hasta = Calendar.getInstance();
+            calendar_hasta.setTime(hoy);//Seteamos el calendario con la fecha seleccionada
+            calendar_hasta.add(Calendar.DATE, -periodo);//Agregamos 1 dia para que la consulta sea menor al dia siguiente
+            antes = calendar_hasta.getTime();
+			String Sql = "SELECT * FROM COMPROBANTESVENTAS WHERE  CODIGOCLIENTE=" + cliente +" AND CLASE IN ('FT','ND','NC','CI') AND FECHA<"+hoy.getTime()+" AND FECHA>="+antes.getTime()+" ORDER BY FECHA ASC LIMIT 1";
+			Cursor cur = db.rawQuery(Sql, null);
+			if (cur.getColumnCount()>0){
+				while (cur.moveToNext()){
+					comprobante=cur.getString(cur.getColumnIndex("CLASE"))+"-"+cur.getString(cur.getColumnIndex("TIPO"))+"-"+funcion.autocompletarNumero(String.valueOf(cur.getInt(cur.getColumnIndex("SUCURSAL"))),4)+"-"+funcion.autocompletarNumero(String.valueOf(cur.getInt(cur.getColumnIndex("NUMERO"))),8);
+				}
+			}
+			return comprobante;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "";
+		}
+	}
+
+	public void modificarComprobante(double saldo, Voucher voucher){
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null,funcion.Version());
+		 SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		 String sql = "UPDATE COMPROBANTESVENTAS SET ESTADO=1,SALDO="+saldo+" WHERE CLASE='" +voucher.getClase() + "' AND TIPO='"+ voucher.getTipo() +"' AND SUCURSAL="+ voucher.getSucursal() +" AND NUMERO="+ voucher.getNumero() +"";
+ 		 db.execSQL(sql);
+	}
+	
+	public void guardarVoucher(Gain gain){
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null,funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		String sqlInsert="INSERT INTO COBRANZA (CLASE,TIPO,SUCURSAL,NUMERO,FECHA,CODIGOCLIENTE,CODIGOVENDEDOR,RECIBO,SALDO,IMPORTEPAGADO,ESTADO) " +
+	     		 " VALUES('"+gain.getClase()+"','"+gain.getTipo()+"',"+gain.getSucursal()+","+gain.getNumero_comprobante()+","+gain.getFecha()+"," +
+	     		 ""+gain.getCodigo_cliente()+","+gain.getCodigo_vendedor()+","+gain.getNumero_recibo()+","+gain.getSaldo()+"," +
+	     		 ""+gain.getImporte_pagado()+","+gain.getEstado()+")";
+	   db.execSQL(sqlInsert);
+	}
+}

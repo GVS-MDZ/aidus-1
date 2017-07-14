@@ -1,0 +1,75 @@
+package com.gvs.conectoras;
+
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import android.content.Context;
+
+
+import com.gvs.entidades.Configuracion;
+import com.gvs.exceptiones.ConectorException;
+
+public abstract class ConectorGeneral {
+
+	protected Configuracion configuracion;
+	
+	protected ConectorGeneral(Configuracion conf){
+		configuracion=conf;
+	}
+	
+	public boolean correr(Context PantallaOriginal) throws IOException, ConectorException {
+		String urlCompleto= "http://" + configuracion.getNombreSrv() + ":" + configuracion.getPuerto() + "/serverSiDisGo-war/";
+		urlCompleto = urlCompleto + CompletarURL();
+		urlCompleto = replace(urlCompleto, " ", "");
+		urlCompleto = replace(urlCompleto, "{", "(");
+		urlCompleto = replace(urlCompleto, "}", ")");
+		urlCompleto = replace(urlCompleto, ">", " ");
+		urlCompleto = replace(urlCompleto, "<", " ");
+		urlCompleto = replace(urlCompleto, "^", " ");
+		urlCompleto = replace(urlCompleto, "°", "g");
+		urlCompleto = replace(urlCompleto, "#", "N");
+		
+		URL url = new URL(urlCompleto);
+		HttpURLConnection urlConection = (HttpURLConnection) url.openConnection();
+		 
+		try{
+			urlConection.setConnectTimeout(20000);
+			int codigo = urlConection.getResponseCode();
+			if (codigo==200){
+				procesarRespuesta(new DataInputStream(urlConection.getInputStream()));
+				return true;
+			} else {
+				throw new ConectorException("Respuesta 500 del servidor");
+			}
+	
+		} catch (Exception e) {
+			throw new ConectorException(e.getMessage());
+		} finally {
+			urlConection.disconnect();
+		}
+	}
+
+    private  String replace(String _text, String _searchStr, String _replacementStr) {
+       StringBuffer sb = new StringBuffer();
+       int searchStringPos = _text.indexOf(_searchStr);
+       int startPos = 0;
+       int searchStringLength = _searchStr.length();
+
+       // Iterate to add string
+       while (searchStringPos != -1) {
+           sb.append(_text.substring(startPos, searchStringPos)).append(_replacementStr);
+           startPos = searchStringPos + searchStringLength;
+           searchStringPos = _text.indexOf(_searchStr, startPos);
+       }
+
+       // Create string
+       sb.append(_text.substring(startPos,_text.length()));
+
+       return sb.toString();
+   }
+	
+	protected abstract String CompletarURL() throws ConectorException;
+	
+	protected abstract void procesarRespuesta(DataInputStream in) throws ConectorException;
+}

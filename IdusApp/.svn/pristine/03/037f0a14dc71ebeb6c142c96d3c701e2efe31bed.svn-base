@@ -1,0 +1,55 @@
+package com.gvs.conectoras;
+
+import java.io.DataInputStream;
+
+import android.content.Context;
+import android.database.SQLException;
+import android.database.sqlite.SQLiteDatabase;
+import com.gvs.entidades.Configuracion;
+import com.gvs.entidades.RespuestaEncuestas;
+import com.gvs.exceptiones.ConectorException;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+
+public class ConectorRespuestaEncuesta extends ConectorGeneral{
+
+	private Context conte;
+	private int lEmpresa;
+	private int lVendedor;
+	private RespuestaEncuestas lRespuesta;
+	private Funciones funcion = new Funciones();
+	
+	public ConectorRespuestaEncuesta(Configuracion conf,Context cont, int empresa, int vendedor,RespuestaEncuestas respuesta) {
+		super(conf);
+		conte=cont;
+		lEmpresa=empresa;
+		lVendedor=vendedor;
+		lRespuesta=respuesta;		
+	}
+
+	@Override
+	protected String CompletarURL() throws ConectorException {
+		String strURL ="recibirRespuestasEncuestas?idaidus=" + lRespuesta.getIdAidus() + "&empresa=" + lEmpresa +
+				"&numero=" + lRespuesta.getNumero() + "&vendedor=" + lVendedor + "&cliente=" + lRespuesta.getCodigoCliente() +
+				"&fecha=" + lRespuesta.getFecha() + "&observacion=" + lRespuesta.getObservacion() +
+				"&latitud=" + lRespuesta.getLatitud() + "&longitud=" + lRespuesta.getLongitud() +
+				"&precis=" + lRespuesta.getPrecis() + "&provee" + lRespuesta.getProvee() +
+				"&respuestas=" + lRespuesta.getRespuestas();
+		return strURL;
+	}
+
+	@Override
+	protected void procesarRespuesta(DataInputStream in)
+			throws ConectorException {
+		try {
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			String Sql = "UPDATE TOMAENCUESTACABECERA SET ESTADO=1 WHERE NUMERO='" + lRespuesta.getIdAidus() + "'";
+			db.execSQL(Sql);
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new ConectorException(e.getMessage());
+		}
+		}		
+	}

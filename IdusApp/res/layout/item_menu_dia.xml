@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal" >
+
+<LinearLayout
+    android:layout_width="50dp"
+    android:layout_height="49dp"
+    android:background="#502b70"
+    android:orientation="vertical" >
+
+    <TextView
+        android:id="@+id/lbl_dia"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#ffffff"
+        android:layout_marginTop="9dp"
+        android:layout_marginLeft="10dp"
+        android:textSize="20dp"
+        android:text="Lu" />
+
+    </LinearLayout>
+    
+    <TextView
+        android:id="@+id/lbl_item_day"
+        android:layout_width="wrap_content"
+        android:layout_height="49dp"
+        android:layout_weight="0.94"
+        android:gravity="center_vertical"
+        android:paddingLeft="10dp"
+        android:text="Lunes" />
+
+</LinearLayout>

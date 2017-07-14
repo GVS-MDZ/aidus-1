@@ -1,0 +1,164 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="0.72"
+        android:background="#FFFFFF" >
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical" >
+
+            <TextView
+                android:id="@+id/lbl_titulo1"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginBottom="5dp"
+                android:background="#7FFF00"
+                android:gravity="center"
+                android:paddingBottom="5dp"
+                android:paddingTop="5dp"
+                android:text="DATOS DEL PEDIDO" />
+
+            <TextView
+                android:id="@+id/lbl_numero_pedido"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingLeft="10dp"
+                android:text="numero" />
+
+            <TextView
+                android:id="@+id/lbl_numero_final"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingLeft="10dp"
+                android:text="final" />
+
+            <TextView
+                android:id="@+id/lbl_fecha"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingLeft="10dp"
+                android:text="fecha" />
+
+            <TextView
+                android:id="@+id/lbl_codigo_cliente"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingLeft="10dp"
+                android:text="cliente" />
+
+            <TextView
+                android:id="@+id/lbl_codigo_vendedor"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingLeft="10dp"
+                android:text="vendedor" />
+
+            <TextView
+                android:id="@+id/lbl_cantidad_item"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingLeft="10dp"
+                android:text="items" />
+
+            <TextView
+                android:id="@+id/lbl_titulo2"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginBottom="5dp"
+                android:layout_marginTop="5dp"
+                android:background="#FFD700"
+                android:gravity="center"
+                android:paddingBottom="5dp"
+                android:paddingTop="5dp"
+                android:text="ESTADO" />
+
+            <TextView
+                android:id="@+id/lbl_estado"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingLeft="10dp"
+                android:text="estado" />
+
+            <TextView
+                android:id="@+id/lbl_fecha_enviado"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingLeft="10dp"
+                android:text="fecha envio" />
+
+            <TextView
+                android:id="@+id/lbl_titulo3"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginBottom="5dp"
+                android:layout_marginTop="5dp"
+                android:background="#00CED1"
+                android:gravity="center"
+                android:paddingBottom="5dp"
+                android:paddingTop="5dp"
+                android:text="DATOS DE CONECTIVIDAD" />
+
+            <TextView
+                android:id="@+id/lbl_internet"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingLeft="10dp"
+                android:text="internet" />
+
+            <TextView
+                android:id="@+id/lbl_longitud"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingLeft="10dp"
+                android:text="longitud" />
+
+            <TextView
+                android:id="@+id/lbl_latitud"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingLeft="10dp"
+                android:text="latitud" />
+
+            <TextView
+                android:id="@+id/lbl_precision"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingLeft="10dp"
+                android:text="precision" />
+
+            <TextView
+                android:id="@+id/lbl_proveedor"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingLeft="10dp"
+                android:text="proveedor" />
+
+            <TextView
+                android:id="@+id/lbl_titulo4"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginBottom="5dp"
+                android:layout_marginTop="5dp"
+                android:background="#FF6347"
+                android:gravity="center"
+                android:paddingBottom="5dp"
+                android:paddingTop="5dp"
+                android:text="OBSERVACION" />
+
+            <TextView
+                android:id="@+id/lbl_observacion"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingLeft="10dp"
+                android:text="observacion" />
+        </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>

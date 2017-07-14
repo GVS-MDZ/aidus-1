@@ -1,0 +1,13 @@
+package com.gvs.exceptiones;
+
+public class ExceptionPedido extends Exception {
+	private static final long serialVersionUID = 1L;
+
+	public ExceptionPedido() {
+
+	}
+
+	public ExceptionPedido(String msg) {
+		super(msg);
+	}
+}

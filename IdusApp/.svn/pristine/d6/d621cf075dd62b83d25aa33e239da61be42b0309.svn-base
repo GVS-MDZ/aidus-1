@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+    <TextView
+        android:id="@+id/txt_editar"
+        android:layout_width="match_parent"
+        android:gravity="center"
+        android:paddingTop="5dp"
+        android:background="#FFD700"
+        android:paddingBottom="5dp"
+        android:layout_marginBottom="10dp"
+        android:layout_height="wrap_content"
+        android:text="" />
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content" >
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical" >
+
+            <TextView
+                android:id="@+id/lbl_cantidad_editado"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="@string/lbl_cantidad" />
+
+            <EditText
+                android:id="@+id/txt_cantidad_editado"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:ems="10" >
+                <requestFocus />
+            </EditText>
+        </LinearLayout>
+	
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical" >
+
+            <TextView
+                android:id="@+id/lbl_descuento_editado"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="@string/lbl_descuento" />
+
+            <EditText
+                android:id="@+id/txt_descuento_editado"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:ems="10" />
+
+               
+        </LinearLayout>
+    </LinearLayout>
+ <TextView
+        android:id="@+id/txt_mensaje"
+        android:layout_width="match_parent"
+        android:gravity="center"
+        android:paddingTop="5dp"
+        android:textColor="#FF0000"
+        android:paddingBottom="5dp"
+        android:layout_height="wrap_content"
+        android:text="" />
+    
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="35dp" >
+
+        <Button
+            android:id="@+id/btn_aceptar_editar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="1dp"
+            android:layout_weight="1"
+            android:background="@anim/btn_ingresar"
+            android:text="@string/btn_aceptar"
+            android:textColor="#FFFFFF" />
+
+        <Button
+            android:id="@+id/btn_cancelar_editar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="1dp"
+            android:layout_weight="1"
+            android:background="@anim/btn_ingresar"
+            android:text="@string/btn_cancelar"
+            android:textColor="#FFFFFF" />
+    </LinearLayout>
+
+</LinearLayout>

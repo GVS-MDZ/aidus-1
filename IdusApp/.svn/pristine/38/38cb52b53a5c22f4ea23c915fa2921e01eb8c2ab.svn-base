@@ -1,0 +1,223 @@
+package com.gvs.idusapp;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import com.gvs.busquedas.BusquedaConfiguracion;
+import com.gvs.busquedas.BusquedaEncuestas;
+import com.gvs.busquedas.BusquedaUsuario;
+import com.gvs.entidades.Configuracion;
+import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.content.ContentValues;
+import android.content.Context;
+import android.content.Intent;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.RadioButton;
+import android.widget.TextView;
+import android.widget.Toast;
+
+@SuppressLint("SimpleDateFormat")
+public class AnswerQuestionActivity extends Activity {
+	
+	private TextView laCliente,laNombre,laPregunta,laAyuda;
+	private RadioButton radSi, radNo;
+	private Button boAceptar,boSiguiente;
+	private String idEncuesta="";
+	private int numeroItem=0;
+	private LocationManager locManager;
+	private LocationListener locLis;	
+	private double latitud=0;
+	private double longitud=0;
+	private double precision=0;
+	private String proveedor="";
+	private Bundle bun;
+	private Configuracion configuracion;
+	private BusquedaUsuario controladorUsuario;
+	private BusquedaConfiguracion busquedaConfiguracion;
+	private BusquedaEncuestas busEncuesta;
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_answer_question);
+		try{
+			laCliente = (TextView) findViewById(R.id.laEncuestaCodCliente);
+			laNombre = (TextView) findViewById(R.id.laEncuestaNombre);
+			laPregunta = (TextView) findViewById(R.id.laEncuestaPregunta);
+			laAyuda = (TextView) findViewById(R.id.laEncuestaAyuda);
+			radSi = (RadioButton) findViewById(R.id.radEncuestaSi);
+			radNo = (RadioButton) findViewById(R.id.radEncuestaNo);
+			boAceptar = (Button) findViewById(R.id.butEncuestaAceptar);
+			boSiguiente = (Button) findViewById(R.id.butEncuestaSiguiente);
+			
+			bun = getIntent().getExtras();	
+			controladorUsuario = new BusquedaUsuario();
+			laCliente.setText("Cliente:" + bun.getString("DATO01"));
+			laNombre.setText(bun.getString("NOMBREENCUESTA"));
+			SimpleDateFormat format=new SimpleDateFormat("dd-MM-yyyy");
+			String date=format.format(new Date());
+			idEncuesta =bun.getInt("EMPRESA") + "-" + bun.getInt("VENDEDOR") + "-" + bun.getInt("CODIGOCLIENTE")  + "-" + date;
+			busquedaConfiguracion=new BusquedaConfiguracion(this);
+			configuracion = busquedaConfiguracion.buscarConfiguracion();
+			if (configuracion.getServicioGeo()==1){
+				comenzarLocalizacion();
+			}
+			
+			buscarItem(bun.getInt("NUMEROENCUESTA"), -1);
+			
+			boAceptar.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+				finish();
+				}
+			});
+			
+			boSiguiente.setOnClickListener(new OnClickListener() {	
+			
+			@Override
+			public void onClick(View v) {
+				try {
+						ContentValues contE = new ContentValues();
+						contE.put("NUMERO", idEncuesta);
+						contE.put("CODIGOCLIENTE", bun.getInt("CODIGOCLIENTE"));
+						contE.put("CODIGOVENDEDOR", bun.getInt("VENDEDOR"));
+						contE.put("NUMEROENCUESTA", bun.getInt("NUMEROENCUESTA"));
+						contE.put("FECHA", new Date().getTime());
+						contE.put("OBSERVACION", "");
+						contE.put("LATITUD", latitud);
+						contE.put("LONGITUD", longitud);
+						contE.put("PRECISION", precision);
+						contE.put("PROVEE", proveedor);
+						contE.put("ESTADO",1);				
+						boolean respuesta= radSi.isChecked();
+						ContentValues contC = new ContentValues();
+						numeroItem=numeroItem +1;
+						contC.put("NUMERO", idEncuesta);
+						contC.put("ITEM", numeroItem);
+						contC.put("RESPUESTA", respuesta);
+						contC.put("OBSERVACION", "");
+						busEncuesta = new BusquedaEncuestas(AnswerQuestionActivity.this);
+						busEncuesta.grabarEncuesta(contE, contC);
+						buscarItem(bun.getInt("NUMEROENCUESTA"),numeroItem);
+					} catch (Exception ex) {
+						Toast toast =Toast.makeText(getApplicationContext(),"Bug al guardar respuesta", Toast.LENGTH_SHORT);
+						toast.show();
+					}		
+			}
+			
+		});
+			
+		} catch (Exception e){
+			Toast toast =Toast.makeText(this,"Bug al listar encuesta", Toast.LENGTH_SHORT);
+			toast.show();
+		}
+	}
+	
+	private void buscarItem(final int numeroEncuesta,int numeroItem) {
+		try{
+			busEncuesta = new BusquedaEncuestas(this);		
+			String resp = busEncuesta.buscarNuevoItem(numeroEncuesta, numeroItem);		
+			if (resp.equals("ef")) {
+				finish();
+			} else if (resp.equals("ev")) {
+				Toast toast =Toast.makeText(this,"Bug encuesta vacia", Toast.LENGTH_SHORT);
+				toast.show();
+				finish();
+			} else {
+				String tex[] = resp.split("~");
+				laPregunta.setText("¿ "+tex[0].trim()+" ?");
+				laAyuda.setText(tex[1].trim());
+				radSi.setChecked(true);
+				radNo.setChecked(false);
+			}
+		} catch (Exception e){
+			Toast toast =Toast.makeText(this,"Bug al listar items", Toast.LENGTH_SHORT);
+			toast.show();
+		}
+	}
+	
+	private void comenzarLocalizacion(){
+		try{
+				locManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+				if (locManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+					locManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+				} else {
+					if (locManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)){
+						locManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+					} 
+				}
+		} catch (Exception e){
+			Toast toast =Toast.makeText(this,"Bug gps", Toast.LENGTH_SHORT);
+			toast.show();
+		}
+
+		locLis = new LocationListener() {
+				
+				@Override
+				public void onStatusChanged(String provider, int status, Bundle extras) {
+
+					proveedor=provider;
+				}
+				
+				@Override
+				public void onProviderEnabled(String provider) {
+
+				}
+				
+				@Override
+				public void onProviderDisabled(String provider) {
+
+				}
+				
+				@Override
+				public void onLocationChanged(Location location) {
+					latitud=location.getLatitude();
+					longitud=location.getLongitude();
+					precision=location.getAccuracy();
+					proveedor=location.getProvider();
+				}
+
+			};
+			
+			if (locManager.isProviderEnabled(LocationManager.GPS_PROVIDER)){
+				locManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 100, locLis);
+			} else {
+				if (locManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+					locManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000, 100, locLis);
+				} 
+			}
+			
+		}
+	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.answer_question, menu);
+		return true;
+	}
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		int id = item.getItemId();
+		if(id == R.id.cerrar_sesion){
+			startActivity(new Intent(getBaseContext(), MainActivity.class)
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
+			controladorUsuario.cerrarSesion(this);
+			finish();
+		}else if(id == R.id.sincronizar){
+			Intent i = new Intent(this, SyncActivity.class);
+			bun.putString("SINCRONIZACION","GENERAL");
+			i.putExtras(bun);
+			startActivity(i);
+		}
+		return super.onOptionsItemSelected(item);
+	}
+
+}

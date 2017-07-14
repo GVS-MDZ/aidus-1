@@ -1,0 +1,84 @@
+package com.gvs.conectoras;
+
+import java.io.DataInputStream;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import com.gvs.entidades.Configuracion;
+import com.gvs.exceptiones.ConectorException;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+
+public class ConectarVentaXDias extends ConectorGeneral {
+
+	private int lEmpresa;
+	private int lVendedor;
+	private Context lCont;
+	
+	public ConectarVentaXDias(Configuracion conf,int empresa,int vendedor,Context cont){
+		super(conf);
+		lEmpresa=empresa;
+		lVendedor=vendedor;
+		lCont=cont;
+	}
+	
+	@Override
+	protected String CompletarURL() throws ConectorException {
+		// TODO Auto-generated method stub
+		return "enviarVentaXPDiaXVendedor?empresa="+ lEmpresa + "&vendedor="+lVendedor;
+	}
+
+	@Override
+	protected void procesarRespuesta(DataInputStream in)
+			throws ConectorException {
+		// TODO Auto-generated method stub
+		int tipoActualizacion=0;
+		boolean yaBorre=false;
+		Funciones funcion= new Funciones();
+		BaseDeDatos baseDeDatos = new BaseDeDatos(lCont, funcion.BaseDeDatos(), null, funcion.Version());
+		final SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		ContentValues cont = new ContentValues();
+		Cursor cur;
+		try {
+			while (true){
+				tipoActualizacion=in.readInt();
+				if (tipoActualizacion==1299){
+					break;
+				}
+				switch (tipoActualizacion) {
+				case 1201:		
+					cont.clear();
+					if (yaBorre==false) {
+						String sqlB = "DELETE FROM VENTAXPDIAS";
+						db.execSQL(sqlB);
+						yaBorre=true;
+					}
+					String periodo=in.readUTF();
+					int dia = in.readInt();
+					cont.put("PERIODO", periodo);
+					cont.put("DIA", dia);
+					cont.put("IMPORTE", in.readDouble());
+					cont.put("ACTUALIZACION", in.readLong());
+					
+					String Sql = "SELECT * FROM VENTAXPDIAS WHERE PERIODO='" + periodo + "' AND DIA=" + dia ;
+					cur = db.rawQuery(Sql, null);
+					if (cur.moveToNext()) {
+						db.update("VENTAXPDIAS", cont, "PERIODO='" + periodo + "' AND DIA=" + dia, null);
+					} else {
+						db.insert("VENTAXPDIAS", null, cont);
+					}
+					if (cur!=null) {
+						cur.close();
+					}
+				default:
+					break;
+				}
+			}		
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw new ConectorException(ex.getMessage());
+		}
+	}
+}

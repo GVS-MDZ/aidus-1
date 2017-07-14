@@ -1,0 +1,87 @@
+package com.gvs.conectoras;
+
+import java.io.DataInputStream;
+import java.io.IOException;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+
+import com.gvs.entidades.Configuracion;
+import com.gvs.entidades.Usuario;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+
+public class ConectorUsuario extends ConectorGeneral {
+
+	private String usuario;
+	private String contrasena;
+	private Context conte;
+
+	public ConectorUsuario(Configuracion conf, String usu, String pass,
+			Context context) {
+		super(conf);
+		usuario = usu;
+		contrasena = pass;
+		conte = context;
+
+	}
+
+	@Override
+	protected String CompletarURL() {
+		// TODO Auto-generated method stub
+		return "devolverUsuario?usuario=" + usuario + "&contrasena="
+				+ contrasena+"";
+	}
+
+	@Override
+	protected void procesarRespuesta(DataInputStream in) {
+		// TODO Auto-generated method stub
+		Usuario usu = new Usuario();
+		Funciones funcion = new Funciones();
+		try {
+			usu.setId(in.readInt());
+			usu.setTipo(in.readUTF());
+			usu.setEmpresa(in.readInt());
+			usu.setCodigo(in.readInt());
+			usu.setNombre(in.readUTF());
+			usu.setContrasena(in.readUTF());
+
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte,
+					funcion.BaseDeDatos(), null, funcion.Version());
+			final SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+
+			ContentValues cont = new ContentValues();
+			String sql = "SELECT * FROM USUARIO WHERE CODIGO='" + usu.getId()
+					+ "'";
+			Cursor cur = db.rawQuery(sql, null);
+			if (cur.moveToNext()) {
+				cont.put("NOMBRE", usu.getNombre());
+				cont.put("PASS", usu.getContrasena());
+				cont.put("CODIGOEMPRESA", usu.getEmpresa());
+				cont.put("CODIGOVENDEDOR", usu.getCodigo());
+				db.update("USUARIO", cont, "CODIGO=" + usu.getId() + "", null);
+			} else {
+				cont.put("CODIGO", usu.getId());
+				cont.put("NOMBRE", usu.getNombre());
+				cont.put("PASS", usu.getContrasena());
+				cont.put("CODIGOEMPRESA", usu.getEmpresa());
+				cont.put("CODIGOVENDEDOR", usu.getCodigo());
+				db.insert("USUARIO", null, cont);
+			}
+
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			try {
+				in.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+
+}

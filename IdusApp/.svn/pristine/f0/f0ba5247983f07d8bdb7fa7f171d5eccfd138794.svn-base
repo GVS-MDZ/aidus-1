@@ -1,0 +1,53 @@
+package com.gvs.conectoras;
+
+import java.io.DataInputStream;
+import android.content.Context;
+import android.database.SQLException;
+import android.database.sqlite.SQLiteDatabase;
+import com.gvs.entidades.Configuracion;
+import com.gvs.entidades.NoAtendido;
+import com.gvs.exceptiones.ConectorException;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+
+
+public class ConectorNoAtendido extends ConectorGeneral{
+
+	private int lEmpresa;
+	private Context conte;
+	private Funciones funcion = new Funciones();
+	private NoAtendido noAtendido = new NoAtendido();
+	
+	public ConectorNoAtendido(Configuracion conf,Context cont,int empresa, NoAtendido NoAten){
+		super(conf);
+		conte=cont;
+		lEmpresa=empresa;
+		noAtendido=NoAten;
+	}
+	
+	@Override
+	protected String CompletarURL() throws ConectorException {
+		// TODO Auto-generated method stub
+		String strUrl="altaNoAtendido_AndroidV5?empresa=" + lEmpresa + "&fecha=" + noAtendido.getFecha() +
+				"&vendedor=" + noAtendido.getCodigoVendedor() + "&cliente=" + noAtendido.getCodigoCliente() +
+				"&motivo=" + noAtendido.getCodigoMotivo()+"&latitud="+noAtendido.getLatitud()+"&longitud="+noAtendido.getLongitud()+"&precis="+noAtendido.getPresicion()+"&provee="+noAtendido.getProveedor();
+		return strUrl;
+	}
+
+	@Override
+	protected void procesarRespuesta(DataInputStream in)
+			throws ConectorException {
+		// TODO Auto-generated method stub
+		try {
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			String Sql = "UPDATE NOATENDIDOS SET ESTADO=1 WHERE FECHA=" + noAtendido.getFecha();
+			db.execSQL(Sql);
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new ConectorException(e.getMessage());
+		}
+	}
+
+}

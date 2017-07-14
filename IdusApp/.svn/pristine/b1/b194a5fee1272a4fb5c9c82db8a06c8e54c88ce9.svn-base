@@ -1,0 +1,81 @@
+package com.gvs.idusapp;
+
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.gvs.busquedas.BusquedaArticulos;
+import com.gvs.controladores.ControladorUsuario;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ListView;
+import android.widget.SimpleAdapter;
+import android.widget.AdapterView.OnItemClickListener;
+
+public class ArticleLaunchActivity extends Activity {
+	private ListView lista;
+	private ControladorUsuario controladorUsuario;
+	private Bundle bun;
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_article_launch_);
+		lista=(ListView) findViewById(R.id.list_lanzamientos);
+		bun = getIntent().getExtras();
+		controladorUsuario = new ControladorUsuario();
+		BusquedaArticulos busArt = new BusquedaArticulos(ArticleLaunchActivity.this);
+		llenarListaDos(busArt.buscarLANZAMIENTOS(bun.getInt("CODIGOCLIENTE")));
+		lista.setOnItemClickListener(new OnItemClickListener() {
+			public void onItemClick(AdapterView<?> arg0, View v, int position, long id){
+				HashMap<String, String> map = (HashMap<String, String>) lista.getItemAtPosition(position);
+				String[] dato01 = map.get("DATO10").toString().split("-");
+				String codigoArticulo = dato01[0].toString().trim();
+				Intent intent = new Intent();
+				intent.setData(Uri.parse(codigoArticulo));
+				setResult(RESULT_OK,intent);
+				finish();
+			}			
+		});
+	}
+	
+	private void llenarListaDos(List<Map<String, String>> list){
+		if (list!=null){
+			SimpleAdapter adapter = new SimpleAdapter(this, list, android.R.layout.simple_list_item_2,
+					new String[] {"DATO10","DATO11"},
+					new int[] {android.R.id.text1,
+							   android.R.id.text2});
+			lista.setAdapter(adapter);
+		}
+	}
+	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.article, menu);
+		return true;
+	}
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		int id = item.getItemId();
+		if(id == R.id.cerrar_sesion){
+			startActivity(new Intent(getBaseContext(), MainActivity.class)
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
+			controladorUsuario.cerrarSesion(this);
+			finish();
+		}else if(id == R.id.sincronizar){
+			Intent i = new Intent(this, SyncActivity.class);
+			bun.putString("SINCRONIZACION","GENERAL");
+			i.putExtras(bun);
+			startActivity(i);
+		}
+		return super.onOptionsItemSelected(item);
+	}
+
+}

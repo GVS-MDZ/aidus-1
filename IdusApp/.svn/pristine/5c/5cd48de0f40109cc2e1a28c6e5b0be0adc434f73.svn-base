@@ -1,0 +1,38 @@
+package com.gvs.entidades;
+
+import android.os.Parcel;
+import android.os.Parcelable;
+
+public class OperationClient  implements Parcelable {
+private String name;
+private int icon;
+
+public OperationClient(String name, int icon) {
+	super();
+	this.name = name;
+	this.icon = icon;
+}
+public String getName() {
+	return name;
+}
+public void setName(String name) {
+	this.name = name;
+}
+public int getIcon() {
+	return icon;
+}
+public void setIcon(int icon) {
+	this.icon = icon;
+}
+@Override
+public int describeContents() {
+	// TODO Auto-generated method stub
+	return 0;
+}
+@Override
+public void writeToParcel(Parcel dest, int flags) {
+	// TODO Auto-generated method stub
+	
+}
+
+}

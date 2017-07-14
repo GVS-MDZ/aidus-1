@@ -1,0 +1,48 @@
+package com.gvs.entidades;
+
+import android.os.Parcel;
+import android.os.Parcelable;
+
+public class Rubro  implements Parcelable {
+	
+	private int codigo;
+	private String nombre;
+	private int hab;
+
+	public int getCodigo() {
+		return codigo;
+	}
+
+	public void setCodigo(int codigo) {
+		this.codigo = codigo;
+	}
+
+	public String getNombre() {
+		return nombre;
+	}
+
+	public void setNombre(String nombre) {
+		this.nombre = nombre;
+	}
+
+	public int getHab() {
+		return hab;
+	}
+
+	public void setHab(int hab) {
+		this.hab = hab;
+	}
+
+	@Override
+	public int describeContents() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public void writeToParcel(Parcel dest, int flags) {
+		// TODO Auto-generated method stub
+		
+	}
+
+}

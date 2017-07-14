@@ -1,0 +1,62 @@
+package com.gvs.controladores;
+
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import com.gvs.entidades.Usuario;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+
+public class ControladorUsuario {
+private Funciones funciones=new Funciones();
+
+	public Usuario validarUsuario(Context cont, String usu, String pass) {
+		BaseDeDatos baseDeDatos = new BaseDeDatos(cont, funciones.BaseDeDatos(), null,funciones.Version());
+		final SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+
+		String sql = "SELECT * FROM USUARIO WHERE NOMBRE='" + usu + "' AND PASS='" + pass + "'";
+		Cursor cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			Usuario usua = new Usuario();
+			usua.setCodigo(cur.getInt(cur.getColumnIndex("CODIGOVENDEDOR")));
+			usua.setEmpresa(cur.getInt(cur.getColumnIndex("CODIGOEMPRESA")));
+			usua.setTipo("vendedor");
+			usua.setSesion(cur.getInt(cur.getColumnIndex("SESION")));
+			return usua;
+		} else {
+			return null;
+		}
+	}
+	
+	public void iniciarSesion(Context cont, String usu, String pass){
+		BaseDeDatos baseDeDatos = new BaseDeDatos(cont, funciones.BaseDeDatos(), null,funciones.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		String sql = "UPDATE USUARIO SET SESION=1 WHERE NOMBRE='" + usu + "' AND PASS='"+ pass +"'";
+		db.execSQL(sql);
+	}
+	
+	public Usuario buscarUsuarioLogueado(Context cont){
+		BaseDeDatos baseDeDatos = new BaseDeDatos(cont, funciones.BaseDeDatos(), null,funciones.Version());
+		final SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+
+		String sql = "SELECT * FROM USUARIO WHERE SESION="+1+"";
+		Cursor cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			Usuario usua = new Usuario();
+			usua.setCodigo(cur.getInt(cur.getColumnIndex("CODIGOVENDEDOR")));
+			usua.setEmpresa(cur.getInt(cur.getColumnIndex("CODIGOEMPRESA")));
+			usua.setTipo("vendedor");
+			usua.setSesion(cur.getInt(cur.getColumnIndex("SESION")));
+			return usua;
+		} else {
+			return null;
+		}
+	}
+
+	public void cerrarSesion(Context cont){
+		BaseDeDatos baseDeDatos = new BaseDeDatos(cont, funciones.BaseDeDatos(), null,funciones.Version());
+		final SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		String sql = "DELETE FROM USUARIO WHERE SESION="+1+"";
+		db.execSQL(sql);
+	}
+}

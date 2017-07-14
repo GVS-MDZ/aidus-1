@@ -1,0 +1,31 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:android1="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+    <TextView
+        android:id="@+id/lbl_venta_periodo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#2f2d2e"
+        android:gravity="center"
+        android:paddingBottom="5dp"
+        android:paddingTop="5dp"
+        android:text=""
+        android:textColor="#FFFFFF"
+        android:textSize="17sp"
+        android:textStyle="bold" />
+
+    <View
+        android:layout_width="fill_parent"
+        android:layout_height="2dp"
+        android:background="#502b70" />
+
+    <ListView
+        android1:id="@+id/lista_venta_periodo"
+        android1:layout_width="match_parent"
+        android1:layout_height="wrap_content" >
+    </ListView>
+
+</LinearLayout>

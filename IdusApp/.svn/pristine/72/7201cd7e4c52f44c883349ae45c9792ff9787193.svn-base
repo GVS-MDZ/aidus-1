@@ -1,0 +1,342 @@
+package com.gvs.busquedas;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+
+public class BusquedaActualizacion {
+	private Context conte;
+	private Funciones funcion = new Funciones();
+	private BaseDeDatos baseDeDatos;
+	private SQLiteDatabase db;
+	private Cursor cur;
+	private String sql="";
+	
+	public BusquedaActualizacion(Context cont){
+		conte=cont;
+		funcion = new Funciones();
+		baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(),null, funcion.Version());
+		db = baseDeDatos.getReadableDatabase();
+	}
+	
+	public void iniciarTransaccion(){
+		db.beginTransaction();
+	}
+	
+	public void transaccionCorrectamente(){
+		db.setTransactionSuccessful();
+	}
+	
+	public void terminarTransaccion(){
+		db.endTransaction();
+	}
+	
+	public void guardarVendedor(ContentValues cont){
+		sql = "SELECT * FROM VENDEDOR WHERE CODIGOEMPRESA="+ cont.getAsInteger("CODIGOEMPRESA") + " AND CODIGO="+ cont.getAsInteger("CODIGO");
+		cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			db.update("VENDEDOR",cont,"CODIGOEMPRESA=" + cont.getAsInteger("CODIGOEMPRESA") + " AND CODIGO="+ cont.getAsInteger("CODIGO"), null);
+		} else {
+			db.insert("VENDEDOR", null, cont);
+		}
+		if(cur!=null){
+			cur.close();
+		}
+	}
+	
+	public void guardarListaPrecio(ContentValues cont){
+		sql = "SELECT * FROM LISTASPRECIO WHERE CODIGO=" + cont.getAsInteger("CODIGO") + " AND CODIGORUBRO=" +  cont.getAsInteger("CODIGORUBRO")+ " AND CODIGOSUBRUBRO=" +  cont.getAsInteger("CODIGOSUBRUBRO")+" AND CODIGOARTICULO='"+cont.getAsString("CODIGOARTICULO")+"'";
+		cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			db.update("LISTASPRECIO", cont, "CODIGO=" + cont.getAsInteger("CODIGO")+ " AND CODIGORUBRO=" + cont.getAsInteger("CODIGORUBRO") + " AND CODIGOSUBRUBRO=" + cont.getAsInteger("CODIGOSUBRUBRO")+" AND CODIGOARTICULO='"+cont.getAsString("CODIGOARTICULO")+"'",	null);
+		} else {
+			db.insert("LISTASPRECIO", null, cont);
+		}
+		if(cur!=null){
+			cur.close();
+		}
+	}
+	
+	public void guardarCliente(ContentValues cont){
+		sql = "SELECT * FROM CLIENTES WHERE CODIGO="+ cont.getAsInteger("CODIGO");
+		cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			db.update("CLIENTES",cont,"CODIGO=" + cont.getAsInteger("CODIGO"),null);
+		} else {
+			db.insert("CLIENTES", null, cont);
+		}
+		if(cur!=null){
+			cur.close();
+		}
+	}
+	
+	public void eliminarCliente(){
+		sql = "DELETE FROM CLIENTES";
+		db.execSQL(sql);
+	}
+	
+	public void eliminarVisitas(){
+		sql = "DELETE FROM VISITAS";
+		db.execSQL(sql);
+	}
+	
+	public void guardarVisita(ContentValues cont){
+		sql = "SELECT * FROM VISITAS WHERE CODIGOCLIENTE="+ cont.getAsInteger("CODIGOCLIENTE");
+		cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			db.update("VISITAS",cont,"CODIGOCLIENTE="+ cont.getAsInteger("CODIGOCLIENTE"),null);
+		} else {
+			db.insert("VISITAS", null, cont);
+		}
+		if(cur!=null){
+			cur.close();
+		}
+	}
+	
+	public void guardarRubro(ContentValues cont){
+		sql = "SELECT * FROM RUBROS WHERE CODIGO="+ cont.getAsInteger("CODIGO");
+		cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			db.update("RUBROS", cont,"CODIGO=" +cont.getAsInteger("CODIGO"),null);
+		} else {
+			db.insert("RUBROS", null, cont);
+		}
+		if(cur!=null){
+			cur.close();
+		}
+	}
+	
+	public void guardarSubrubro(ContentValues cont){
+		sql= "SELECT * FROM SUBRUBROS WHERE CODIGO="+cont.getAsInteger("CODIGO")+ " AND CODIGORUBRO="+ cont.getAsInteger("CODIGORUBRO");
+		cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			db.update("SUBRUBROS",cont,"CODIGO=" + cont.getAsInteger("CODIGO")+ " AND CODIGORUBRO="+cont.getAsInteger("CODIGORUBRO"),null);
+		} else {
+			db.insert("SUBRUBROS", null, cont);
+		}
+		if(cur!=null){
+			cur.close();
+		}
+	}
+	
+	public void eliminarArticulo(){
+		sql = "DELETE FROM ARTICULOS";
+		db.execSQL(sql);
+	}
+	
+	public void guardarArticulo(ContentValues cont){
+		sql = "SELECT * FROM ARTICULOS WHERE CODIGO='"+ cont.getAsString("CODIGO")+ "'";
+		cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			db.update("ARTICULOS", cont,"CODIGO='" + cont.getAsString("CODIGO")+ "'", null);
+		} else {
+			db.insert("ARTICULOS", null, cont);
+		}
+		if(cur!=null){
+			cur.close();
+		}
+	}
+	
+	public void guardarMotivo(ContentValues cont){
+		sql = "SELECT * FROM MOTIVOS WHERE CODIGO="+ cont.getAsInteger("CODIGO");
+		cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			db.update("MOTIVOS", cont,"CODIGO=" + cont.getAsInteger("CODIGO"),null);
+		} else {
+			db.insert("MOTIVOS", null, cont);
+		}
+		cur.close();
+	}
+	
+	public void guardarSugerido(ContentValues cont){
+		sql = "SELECT * FROM SUGERIDOS WHERE CODIGOARTICULO='"+ cont.getAsString("CODIGOARTICULO") + "'";
+		cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			db.update("SUGERIDOS", cont, "CODIGOARTICULO='"+ cont.getAsString("CODIGOARTICULO") + "'",null);
+		} else {
+			db.insert("SUGERIDOS", null, cont);
+		}
+		if(cur!=null){
+			cur.close();
+		}
+	}
+	
+	public void modificarConfiguracion(ContentValues cont){
+		sql = "SELECT * FROM CONFIGURACION";
+		cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			db.update("CONFIGURACION", cont,null, null);
+		} else {
+			db.insert("CONFIGURACION", null, cont);
+		}
+		if(cur!=null){
+			cur.close();
+		}
+	}
+	
+	public void guardarPedido(ContentValues cont){
+		sql = "SELECT * FROM PEDIDOSCABECERA WHERE CODIGOCLIENTE=-1";
+		cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			db.update("PEDIDOSCABECERA", cont," CODIGOCLIENTE=-1", null);
+		} else {
+			db.insert("PEDIDOSCABECERA", null, cont);
+		}
+		if(cur!=null){
+			cur.close();
+		}
+	}
+	
+	public void eliminarArticuloImpresindible(){
+		sql = "DELETE FROM ARTINDISPENSABLES";
+		db.execSQL(sql);
+	}
+	
+	public void guardarImpresindible(ContentValues cont){
+		sql = "SELECT * FROM ARTINDISPENSABLES WHERE CODIGOCLIENTE="+ cont.getAsInteger("CODIGOCLIENTE")+
+				    " AND CODIGOARTICULO='"+ cont.getAsString("CODIGOARTICULO") + "'";
+		cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			db.update("ARTINDISPENSABLES",cont,"CODIGOCLIENTE="+ cont.getAsInteger("CODIGOCLIENTE")
+					+ " AND CODIGOARTICULO='"+ cont.getAsString("CODIGOARTICULO")+ "'", null);
+		} else {
+			db.insert("ARTINDISPENSABLES", null, cont);
+		}
+		if(cur!=null){
+			cur.close();
+		}
+	}
+	
+	public void eliminarArticuloLanzamiento(){
+		sql = "DELETE FROM ARTLANZAMIENTOS";
+		db.execSQL(sql);
+	}
+	
+	public void guardarLanzamiento(ContentValues cont){
+		sql = "SELECT * FROM ARTLANZAMIENTOS WHERE CODIGOCLIENTE="+ cont.getAsInteger("CODIGOCLIENTE")
+				+ " AND CODIGOARTICULO='"+ cont.getAsString("CODIGOARTICULO") + "'";
+		cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			db.update("ARTLANZAMIENTOS",cont,"CODIGOCLIENTE="+ cont.getAsInteger("CODIGOCLIENTE")
+							+ " AND CODIGOARTICULO='"+ cont.getAsString("CODIGOARTICULO")+ "'", null);
+		} else {
+			db.insert("ARTLANZAMIENTOS", null, cont);
+		}
+		if(cur!=null){
+			cur.close();
+		}
+	}
+	
+	public void eliminarObjetivos(){
+		sql = "DELETE FROM OBJXVISITA";
+		db.execSQL(sql);	
+	}
+	
+	
+	public void guardarObjetivoVisita(ContentValues cont){
+		sql = "SELECT * FROM OBJXVISITA WHERE CODIGOCLIENTE="
+				+ cont.getAsInteger("CODIGOCLIENTE")+ " AND PERIODO='"+ cont.getAsString("PERIODO") + "'";
+		cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			db.update("OBJXVISITA",cont,"CODIGOCLIENTE="+ cont.getAsInteger("CODIGOCLIENTE")
+					+ " AND PERIODO='"+ cont.getAsString("PERIODO") + "'",null);
+		} else {
+			db.insert("OBJXVISITA", null, cont);
+		}
+		if(cur!=null){
+			cur.close();
+		}
+	}
+	
+	public void eliminarVentas(){
+		sql = "DELETE FROM VENTAXPDIAS";
+		db.execSQL(sql);
+	}
+	
+	public void guardarVentas(ContentValues cont){
+		sql = "SELECT * FROM VENTAXPDIAS WHERE PERIODO='"+ cont.getAsString("PERIODO") + "' AND DIA="+ cont.getAsInteger("DIA");
+		cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			db.update("VENTAXPDIAS",cont,"PERIODO='" + cont.getAsString("PERIODO")+ "' AND DIA="+ cont.getAsInteger("DIA"), null);
+		} else {
+			db.insert("VENTAXPDIAS", null, cont);
+		}
+		if(cur!=null){
+			cur.close();
+		}
+	}
+	
+	public void eliminarEncuestas(){
+		String sqlB = "DELETE FROM ENCUESTACABECERA";
+		String sqlC = "DELETE FROM ENCUESTACUERPO";
+		db.execSQL(sqlB);
+		db.execSQL(sqlC);
+	}
+	
+	public void guardarEncuesta(ContentValues cont){
+		sql = "SELECT * FROM ENCUESTACABECERA WHERE NUMERO="+ cont.getAsInteger("NUMERO");
+		cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			db.update("ENCUESTACABECERA", cont, "NUMERO="+ cont.getAsInteger("NUMERO"), null);
+		} else {
+			db.insert("ENCUESTACABECERA", null, cont);
+		}
+		cur.close();
+	} 
+	
+	public void guardarItemEncuesta(ContentValues cont){
+		sql = "SELECT * FROM ENCUESTACUERPO WHERE NUMERO="
+				+ cont.getAsInteger("NUMERO") + " AND ITEM="+ cont.getAsInteger("ITEM");
+		cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			db.update("ENCUESTACUERPO",cont,"NUMERO=" + cont.getAsInteger("NUMERO")
+							+ " AND ITEM="+ cont.getAsInteger("ITEM"), null);
+		} else {
+			db.insert("ENCUESTACUERPO", null, cont);
+		}
+		if(cur!=null){
+			cur.close();
+		}
+	}
+	
+	public void eliminarComprobantes(){
+		sql= "DELETE FROM COMPROBANTESVENTAS";
+		db.execSQL(sql);
+	}
+	
+	public void guardarComprobante(ContentValues cont){
+		sql = "SELECT * FROM COMPROBANTESVENTAS WHERE TIPO='"+ cont.getAsString("TIPO") + "' AND CLASE='"
+				+ cont.getAsString("CLASE") + "' AND SUCURSAL="+ cont.getAsInteger("SUCURSAL")+ " AND NUMERO=" + cont.getAsInteger("NUMERO");
+		cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			db.update("COMPROBANTESVENTAS",cont,"TIPO='" + cont.getAsString("TIPO")+ "' AND CLASE='"+ cont.getAsString("CLASE")
+					+ "' AND SUCURSAL="+ cont.getAsInteger("SUCURSAL")+ " AND NUMERO="+ cont.getAsString("NUMERO"), null);
+		} else {
+			db.insert("COMPROBANTESVENTAS", null, cont);
+		}
+		if(cur!=null){
+			cur.close();
+		}
+	}
+	
+	public void guardarCombo(ContentValues cont){
+		sql = "SELECT * FROM COMBOS WHERE CODIGO="+ cont.getAsInteger("CODIGO");
+		cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			db.update("COMBOS", cont,"CODIGO=" + cont.getAsInteger("CODIGO"),null);
+		} else {
+			db.insert("COMBOS", null, cont);
+		}
+		if(cur!=null){
+			cur.close();
+		}
+	}
+	
+	public void guardarSincronizacionTotal(ContentValues cont){
+		db.insert("SYNCRO", null, cont);
+	}
+	
+}

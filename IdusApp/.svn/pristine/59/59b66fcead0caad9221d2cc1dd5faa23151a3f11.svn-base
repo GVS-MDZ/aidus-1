@@ -1,0 +1,62 @@
+package com.gvs.entidades;
+
+public class ObjXVisita {
+	private int codigoCliente;
+	private String periodo;
+	private double ventaAnterior;
+	private double objetivoActual;
+	private int cantidadDeVisitas;
+	private double ventaActual;
+	private long fechaActualizacion;
+	private double porcentaje;
+	
+	public int getCodigoCliente() {
+		return codigoCliente;
+	}
+	public void setCodigoCliente(int codigoCliente) {
+		this.codigoCliente = codigoCliente;
+	}
+	public String getPeriodo() {
+		return periodo;
+	}
+	public void setPeriodo(String periodo) {
+		this.periodo = periodo;
+	}
+	public double getVentaAnterior() {
+		return ventaAnterior;
+	}
+	public void setVentaAnterior(double ventaAnterior) {
+		this.ventaAnterior = ventaAnterior;
+	}
+	public double getObjetivoActual() {
+		return objetivoActual;
+	}
+	public void setObjetivoActual(double objetivoActual) {
+		this.objetivoActual = objetivoActual;
+	}
+	public int getCantidadDeVisitas() {
+		return cantidadDeVisitas;
+	}
+	public void setCantidadDeVisitas(int cantidadDeVisitas) {
+		this.cantidadDeVisitas = cantidadDeVisitas;
+	}
+	public double getVentaActual() {
+		return ventaActual;
+	}
+	public void setVentaActual(double ventaActual) {
+		this.ventaActual = ventaActual;
+	}
+	public long getFechaActualizacion() {
+		return fechaActualizacion;
+	}
+	public void setFechaActualizacion(long fechaActualizacion) {
+		this.fechaActualizacion = fechaActualizacion;
+	}
+	public double getPorcentaje() {
+		return porcentaje;
+	}
+	public void setPorcentaje(double porcentaje) {
+		this.porcentaje = porcentaje;
+	}
+	
+}

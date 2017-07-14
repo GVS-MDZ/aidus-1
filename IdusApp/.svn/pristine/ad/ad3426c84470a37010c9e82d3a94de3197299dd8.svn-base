@@ -1,0 +1,61 @@
+package com.gvs.utilidades;
+
+public class OrderDetail {
+	private String descripcion;
+	private String cantidad;
+	private String descuento;
+	private String precio;
+	private int color_descuento;
+	private boolean estado=false;
+	
+	public String getDescripcion() {
+		return descripcion;
+	}
+
+	public void setDescripcion(String descripcion) {
+		this.descripcion = descripcion;
+	}
+
+	public String getCantidad() {
+		return cantidad;
+	}
+
+	public void setCantidad(String cantidad) {
+		this.cantidad = cantidad;
+	}
+
+	public boolean isEstado() {
+		return estado;
+	}
+
+	public void setEstado(boolean estado) {
+		this.estado = estado;
+	}
+
+	public String getDescuento() {
+		return descuento;
+	}
+
+	public void setDescuento(String descuento) {
+		this.descuento = descuento;
+	}
+
+	public String getPrecio() {
+		return precio;
+	}
+
+	public void setPrecio(String precio) {
+		this.precio = precio;
+	}
+
+	public int getColor_descuento() {
+		return color_descuento;
+	}
+
+	public void setColor_descuento(int color_descuento) {
+		this.color_descuento = color_descuento;
+	}
+
+	
+
+}

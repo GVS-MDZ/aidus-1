@@ -1,0 +1,65 @@
+package com.gvs.entidades;
+
+import android.os.Parcel;
+import android.os.Parcelable;
+
+public class Sugeridos  implements Parcelable {
+	private int orden;
+	private String codigo_articulo;
+	private String mensaje;
+	private long vencimiento;
+	private int exigible;
+
+	public int getOrden() {
+		return orden;
+	}
+
+	public void setOrden(int orden) {
+		this.orden = orden;
+	}
+
+	public String getCodigo_articulo() {
+		return codigo_articulo;
+	}
+
+	public void setCodigo_articulo(String codigo_articulo) {
+		this.codigo_articulo = codigo_articulo;
+	}
+
+	public String getMensaje() {
+		return mensaje;
+	}
+
+	public void setMensaje(String mensaje) {
+		this.mensaje = mensaje;
+	}
+
+	public long getVencimiento() {
+		return vencimiento;
+	}
+
+	public void setVencimiento(long vencimiento) {
+		this.vencimiento = vencimiento;
+	}
+
+	public int getExigible() {
+		return exigible;
+	}
+
+	public void setExigible(int exigible) {
+		this.exigible = exigible;
+	}
+
+	@Override
+	public int describeContents() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public void writeToParcel(Parcel dest, int flags) {
+		// TODO Auto-generated method stub
+		
+	}
+
+}

@@ -1,0 +1,273 @@
+package com.gvs.idusapp;
+
+import java.util.ArrayList;
+import java.util.List;
+import com.gvs.busquedas.BusquedaArticulos;
+import com.gvs.busquedas.BusquedaItemsPedido;
+import com.gvs.controladores.ControladorPedido;
+import com.gvs.controladores.ControladorUsuario;
+import com.gvs.entidades.Articulos;
+import com.gvs.entidades.Configuracion;
+import com.gvs.entidades.ItemPedido;
+import com.gvs.utilidades.Funciones;
+import com.gvs.utilidades.OrderDetail;
+import android.app.Activity;
+import android.app.Dialog;
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
+
+
+public class OrderDetailActivity extends Activity {
+private ListView lista_view;
+private long numeroPedido=0;
+private ItemPedido item=null;
+private List<OrderDetail> lista_item;
+private ControladorPedido trbPedidos;
+private BusquedaItemsPedido busItem ;
+private BusquedaArticulos busArt;
+private Funciones funcion ;
+private Configuracion configuracion;
+private Dialog dialog_editar;
+private Dialog dialog_eliminar;
+private Bundle bun;
+private Articulos articulo;
+private OrderDetail order ;
+private double cantV;
+private ControladorUsuario controladorUsuario;
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		try{
+		setContentView(R.layout.activity_order_detail);	
+		lista_view = (ListView) findViewById(R.id.lista_item);
+		lista_item = new ArrayList<OrderDetail>();
+		trbPedidos = new ControladorPedido(OrderDetailActivity.this);
+	    busItem = new BusquedaItemsPedido(OrderDetailActivity.this);
+	    busArt = new BusquedaArticulos(OrderDetailActivity.this);
+	    item=new ItemPedido();
+	    funcion=new Funciones();
+	    controladorUsuario = new ControladorUsuario();
+	    configuracion = funcion.devolverConfiguracion(OrderDetailActivity.this);
+	    bun = getIntent().getExtras();
+		numeroPedido = bun.getLong("NUMERO");
+	    lista_item=busItem.listarItemsDelPedidos(numeroPedido);
+	    setTitle(String.valueOf(numeroPedido));
+	    if(lista_item!=null){
+	    	mostrarLista();
+	    	realizarOperacion();
+		}
+		}catch(Exception ex){
+			
+		}
+	}
+
+	private void mostrarLista() {
+		ArrayAdapter<OrderDetail> adapter = new MyListAdapter();
+		lista_view = (ListView) findViewById(R.id.lista_item);
+		lista_view.setAdapter(adapter);
+	}
+		
+	private void realizarOperacion() {
+		lista_view = (ListView) findViewById(R.id.lista_item);
+		lista_view.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view,int position, long id) {			
+			    order = lista_item.get(position);
+			   
+				String[] dato01 =order.getDescripcion().toString().split("-");
+				int numeroItem = Integer.parseInt(dato01[0].toString().trim());
+				item = busItem.buscarItem(numeroPedido, numeroItem);
+				 cantV=item.getCantidad();
+			}		
+			});
+	
+		}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.order_detail, menu);
+		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem items) {
+		int id = items.getItemId();
+		if (id == R.id.editar_item) {
+			if(order!=null){
+		    dialog_editar=new Dialog(OrderDetailActivity.this);
+		    dialog_editar.setTitle("EDITAR");
+			dialog_editar.setContentView(R.layout.dialogo_editar);
+			TextView txt_cantidad=(TextView)dialog_editar.findViewById(R.id.txt_cantidad_editado);
+			TextView txt_descuento=(TextView)dialog_editar.findViewById(R.id.txt_descuento_editado);
+			TextView txt_editar=(TextView)dialog_editar.findViewById(R.id.txt_editar);
+			//activar descuento
+			if (configuracion.getDescuento()==1){
+				txt_descuento.setEnabled(true);
+			}else {
+				txt_descuento.setEnabled(false);
+			}
+			txt_editar.setText(order.getDescripcion());
+			txt_cantidad.setText(String.valueOf(item.getCantidad()));
+			txt_descuento.setText(String.valueOf(item.getDescuento()));
+			txt_cantidad.requestFocus();
+			Button btn_editar_aceptar = (Button) dialog_editar.findViewById(R.id.btn_aceptar_editar);
+			btn_editar_aceptar.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					TextView txt_cantidad=(TextView)dialog_editar.findViewById(R.id.txt_cantidad_editado);
+					TextView txt_descuento=(TextView)dialog_editar.findViewById(R.id.txt_descuento_editado);
+					trbPedidos.cambiarCantidadEnitem(Double.parseDouble(txt_cantidad.getText().toString().trim()),Double.parseDouble(txt_descuento.getText().toString().trim()) ,item);
+					double cantN=Double.parseDouble(txt_cantidad.getText().toString().trim());
+					double result=0;
+					if(cantN>cantV){
+						result=cantN-cantV;
+						trbPedidos.sumarCantidadImpresindibles(bun.getInt("CODIGOCLIENTE"),  item.getCodigo(), result);
+						trbPedidos.sumarCantidadLanzamientos(bun.getInt("CODIGOCLIENTE"),  item.getCodigo(), result);
+					}else{
+						result=cantV-cantN;
+						trbPedidos.restarCantidadImpresindibles(bun.getInt("CODIGOCLIENTE"), item.getCodigo(), result);
+						trbPedidos.restarCantidadLanzamientos(bun.getInt("CODIGOCLIENTE"),  item.getCodigo(), result);
+					}
+					lista_item.removeAll(lista_item);
+					lista_item=busItem.listarItemsDelPedidos(numeroPedido);					
+				  	articulo = busArt.buscarPorCodigo(item.getCodigo());
+				  	double cantidad=0;
+				  	if(txt_cantidad.getText()==""){
+				  		cantidad=0;
+				  		txt_cantidad.setText("0");
+				  	}else{
+				      cantidad = Double.parseDouble(txt_cantidad.getText().toString().trim());
+				  	}
+				  	int multiplo = articulo.getMultiplo();
+					if(calcularMultiplo(cantidad, multiplo)){
+						if(Double.parseDouble(txt_descuento.getText().toString().trim())<0){
+							TextView txt_mensaje=(TextView)dialog_editar.findViewById(R.id.txt_mensaje);
+							txt_mensaje.setText("El descuento no puede ser menor que cero");			
+						}else{
+							Toast toast =Toast.makeText(getApplicationContext(),"Item modificado", Toast.LENGTH_SHORT);
+							toast.show();	
+							order=null;
+							mostrarLista();
+							dialog_editar.dismiss();
+						}
+					}else{
+					 TextView txt_mensaje=(TextView)dialog_editar.findViewById(R.id.txt_mensaje);
+					 txt_mensaje.setText("La cantidad no es multiplo de "+articulo.getMultiplo());			
+					}
+				}
+			});
+			
+			Button btn_editar_cancelar = (Button) dialog_editar.findViewById(R.id.btn_cancelar_editar);
+			btn_editar_cancelar.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					dialog_editar.dismiss();
+				}
+			});
+			
+			dialog_editar.show();
+			}
+			//return true;
+		}else if(id == R.id.eliminar_item){
+			if(order!=null){
+		    dialog_eliminar=new Dialog(OrderDetailActivity.this);
+		    dialog_eliminar.setTitle("ELIMINAR");
+		    dialog_eliminar.setContentView(R.layout.dialogo_eliminar);
+		    TextView txt_eliminar=(TextView)dialog_eliminar.findViewById(R.id.lbl_eliminar);
+		    txt_eliminar.setText(order.getDescripcion());
+		    
+		    Button btn_eliminar_aceptar = (Button) dialog_eliminar.findViewById(R.id.btn_aceptar_eliminar);
+			btn_eliminar_aceptar.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+							trbPedidos.borrarItemPedido(item);
+							trbPedidos.restarCantidadLanzamientos(bun.getInt("CODIGOCLIENTE"),item.getCodigo(),item.getCantidad());
+							trbPedidos.restarCantidadImpresindibles(bun.getInt("CODIGOCLIENTE"),item.getCodigo(),item.getCantidad());
+							lista_item=busItem.listarItemsDelPedidos(numeroPedido);
+							if(lista_item!=null){
+								Toast toast =Toast.makeText(getApplicationContext(),"Item Eliminado", Toast.LENGTH_SHORT);
+								toast.show();	
+								order=null;
+								mostrarLista();						
+								dialog_eliminar.dismiss();
+							}else{
+								finish();
+							}
+						}
+					});
+		
+			Button btn_eliminar_cancelar = (Button) dialog_eliminar.findViewById(R.id.btn_cancelar_eliminar);
+		    btn_eliminar_cancelar.setOnClickListener(new OnClickListener() {
+						@Override
+						public void onClick(View v) {
+							dialog_eliminar.dismiss();
+						}
+					});
+					dialog_eliminar.show();
+			}
+		}else if(id == R.id.cerrar_sesion){
+			startActivity(new Intent(getBaseContext(), MainActivity.class)
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
+			controladorUsuario.cerrarSesion(this);
+			finish();
+		}else if(id == R.id.sincronizar){
+			Intent i = new Intent(this, SyncActivity.class);
+			bun.putString("SINCRONIZACION","GENERAL");
+			i.putExtras(bun);
+			startActivity(i);
+		}
+		return super.onOptionsItemSelected(items);
+	}
+	
+	private boolean calcularMultiplo(Double cantidad,int multiplo) {
+		int resto =0;
+		if (multiplo>1) {
+			resto = (int) (cantidad%multiplo);
+		} else {
+			resto=0;
+		}
+		if (resto==0) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	private class MyListAdapter extends ArrayAdapter<OrderDetail> {
+
+		public MyListAdapter() {
+			super(OrderDetailActivity.this,R.layout.activity_order_detail, lista_item);
+		}
+
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) {
+			View view = convertView;
+			if (view == null) {
+				view = getLayoutInflater().inflate(R.layout.row_order_detail, parent, false);
+			}
+			if(lista_item!=null){
+			OrderDetail detail = lista_item.get(position);
+			TextView lbl_descripcion=(TextView)view.findViewById(R.id.lbl_descripcion);
+			lbl_descripcion.setText(detail.getDescripcion());
+			TextView lbl_cantidad = (TextView) view.findViewById(R.id.lbl_cantidad);
+			lbl_cantidad.setText(detail.getCantidad());
+			}
+			return view;
+		}
+
+	}
+	
+}
+
+

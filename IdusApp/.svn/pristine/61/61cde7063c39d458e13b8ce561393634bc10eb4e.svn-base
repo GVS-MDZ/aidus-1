@@ -1,0 +1,192 @@
+package com.gvs.idusapp;
+
+import com.gvs.busquedas.BusquedasCierreDeDia;
+import com.gvs.conectoras.ConectorGeneral;
+import com.gvs.conectoras.ConectorUsuario;
+import com.gvs.controladores.ControladorSincronizador;
+import com.gvs.controladores.ControladorUsuario;
+import com.gvs.entidades.Configuracion;
+import com.gvs.entidades.Usuario;
+import com.gvs.utilidades.DetectorDeConexion;
+import com.gvs.utilidades.Funciones;
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.os.Bundle;
+import android.os.StrictMode;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.EditText;
+
+
+
+
+public class LoginActivity extends Activity {
+	private Button btnLogin;
+	private EditText txt_usuario, txt_contrasena;
+	private Configuracion configuracion;
+	private Funciones funcion;
+	private DetectorDeConexion detectorConexion;
+	private ConectorGeneral conectorUsuario;
+	private ControladorUsuario controladorUsuario;
+	private ControladorSincronizador controladorSincronizador;
+	private BusquedasCierreDeDia busquedaCierre;
+	private Bundle bun = new Bundle();
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_login);
+		//permite el acceso a red no funcionaba con esta version(solo menor a la api 9) se coloco este codigo para forzar la coneccion http
+		if (android.os.Build.VERSION.SDK_INT > 9) {
+		    StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+		    StrictMode.setThreadPolicy(policy);
+		}
+		btnLogin = (Button) findViewById(R.id.btn_login);
+		txt_usuario = (EditText) findViewById(R.id.txt_usuario);
+		txt_contrasena = (EditText) findViewById(R.id.txt_contrasena);
+		funcion=new Funciones();
+		configuracion = new Configuracion();
+		controladorUsuario = new ControladorUsuario();
+		controladorSincronizador = new ControladorSincronizador();
+	
+		btnLogin.setOnClickListener(new OnClickListener() {
+
+			
+			@Override
+			public void onClick(View v) {
+				configuracion = funcion.devolverConfiguracion(LoginActivity.this);
+				conectorUsuario = new ConectorUsuario(configuracion,txt_usuario.getText().toString(), txt_contrasena.getText().toString(), LoginActivity.this);
+				detectorConexion=new DetectorDeConexion(LoginActivity.this);
+				try {	
+					// con internet
+					if (detectorConexion.conexionInternet()) {
+						// conexion al servidor
+						if (conectorUsuario.correr(LoginActivity.this)) {
+							Usuario usuario = controladorUsuario.validarUsuario(LoginActivity.this,txt_usuario.getText().toString(),txt_contrasena.getText().toString());
+							if (usuario != null) {
+								busquedaCierre=new BusquedasCierreDeDia(LoginActivity.this, usuario.getEmpresa(), usuario.getCodigo());
+								boolean realizo_cierre=busquedaCierre.realizoCierreDiaAnterior(usuario.getCodigo());
+								if(realizo_cierre){		
+									controladorUsuario.iniciarSesion(LoginActivity.this,txt_usuario.getText().toString(),txt_contrasena.getText().toString());
+									bun.putInt("EMPRESA", usuario.getEmpresa());
+									bun.putInt("VENDEDOR", usuario.getCodigo());								
+									if (controladorSincronizador.comprobarSync(LoginActivity.this, "T",usuario.getEmpresa(),usuario.getCodigo())) {
+										Intent intent = new Intent(LoginActivity.this,WorkDayActivity.class);
+										intent.putExtras(bun);
+										startActivity(intent);
+										finish();
+									} else {
+										Intent intent = new Intent(LoginActivity.this,SyncActivity.class);
+										bun.putString("SINCRONIZACION", "INICIO");
+										intent.putExtras(bun);
+										startActivity(intent);
+										finish();
+									}
+							  }else{
+								  cierreDeDia(usuario);
+							  }
+							} else {
+								funcion.MostrarMensajeAceptar(LoginActivity.this,"Acceso Denegado","El usuario o contraseña es incorrecta.");
+							}
+							// sin conexion al servidor
+						} else {
+							Usuario usuario = controladorUsuario.validarUsuario(LoginActivity.this,txt_usuario.getText().toString(),txt_contrasena.getText().toString());
+							if (usuario != null) {
+								eleccion("Sin Conexion al Servidor","La información puede no estar actualizada, y los pedidos no se entregarán. \n"
+												+ "Esta acción es de su entera responsabilidad \n"
+												+ "¿Desea continuar?", usuario);
+							} else {
+								funcion.MostrarMensajeAceptar(LoginActivity.this,"Acceso Denegado","El usuario o contraseña es incorrecta.");
+							}
+						}
+
+					} else {
+						Usuario usuario = controladorUsuario.validarUsuario(LoginActivity.this, txt_usuario.getText().toString(), txt_contrasena.getText().toString());
+						if (usuario != null) {
+							eleccion("Sin Internet","La información puede no estar actualizada, y los pedidos no se entregarán. \n"
+											+ "Esta acción es de su entera responsabilidad \n"
+											+ "¿Desea continuar?", usuario);
+						} else {
+							funcion.MostrarMensajeAceptar(LoginActivity.this,"Acceso Denegado","El usuario o contraseña es incorrecta.");
+						}
+					}
+				
+				} catch (Exception e) {
+					Usuario usuario = controladorUsuario.validarUsuario(LoginActivity.this, txt_usuario.getText().toString(), txt_contrasena.getText().toString());
+					if (usuario != null) {
+						eleccion("Sin Conexion al Servidor","La información puede no estar actualizada, y los pedidos no se entregarán. \n"
+								+ "Esta acción es de su entera responsabilidad \n"
+								+ "¿Desea continuar?", usuario);
+					} else {
+						funcion.MostrarMensajeAceptar(LoginActivity.this,"Acceso Denegado","El usuario o contraseña es incorrecta.");
+					}
+				}
+			}
+		});
+
+	}
+
+	
+	public void eleccion(String titulo, String cadena, final Usuario usuario) {
+		AlertDialog.Builder alertbox = new AlertDialog.Builder(this);
+		alertbox.setTitle(titulo);
+		alertbox.setMessage(cadena);
+		alertbox.setPositiveButton("Si", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface arg0, int arg1) {
+				mensaje(true, usuario);
+			}
+		});
+		alertbox.setNegativeButton("No", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface arg0, int arg1) {
+				mensaje(false, null);
+			}
+		});
+		alertbox.show();
+	}
+	
+	
+	
+	public void cierreDeDia(final Usuario usuario) {
+		AlertDialog.Builder alertbox = new AlertDialog.Builder(this);
+		alertbox.setTitle("Cierre de dia");
+		alertbox.setMessage("La ultima vez no realizo el cierre de dia obligatorio \n ¿Desea realizarlo?");
+		alertbox.setPositiveButton("Si", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface arg0, int arg1) {
+				busquedaCierre=new BusquedasCierreDeDia(LoginActivity.this, usuario.getEmpresa(), usuario.getCodigo());
+				busquedaCierre.realizarCierreDiaPendiente();						
+				Intent intent = new Intent(LoginActivity.this,SyncActivity.class);
+				bun.putInt("EMPRESA", usuario.getEmpresa());
+				bun.putInt("VENDEDOR", usuario.getCodigo());	
+				bun.putString("SINCRONIZACION", "INICIO");
+				intent.putExtras(bun);
+				startActivity(intent);
+				finish();
+			}
+		});
+		alertbox.setNegativeButton("No", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface arg0, int arg1) {
+				finish();
+			}
+		});
+		
+		alertbox.show();
+	}
+	
+	private void mensaje(boolean respuesta, Usuario usuario) {
+		if (respuesta) {
+			Bundle bun = new Bundle();
+			bun.putInt("EMPRESA", usuario.getEmpresa());
+			bun.putInt("VENDEDOR", usuario.getCodigo());
+			Intent intent = new Intent(LoginActivity.this,WorkDayActivity.class);
+			intent.putExtras(bun);
+			startActivity(intent);
+		} else {
+			finish();
+		}
+	}
+
+}
+
+

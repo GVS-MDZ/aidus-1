@@ -1,0 +1,60 @@
+package com.gvs.conectoras;
+
+import java.io.DataInputStream;
+import android.content.Context;
+import com.gvs.busquedas.BusquedaVentaPorDia;
+import com.gvs.entidades.Configuracion;
+import com.gvs.entidades.Venta;
+
+public class ConectarVentaXDias extends ConectorGeneral {
+
+	private int empresa;
+	private int vendedor;
+	private Context conte;
+	private BusquedaVentaPorDia busquedaVenta;
+	
+	public ConectarVentaXDias(Configuracion conf,int empresa,int vendedor,Context cont){
+		super(conf);
+		this.empresa=empresa;
+		this.vendedor=vendedor;
+		this.conte=cont;
+	}
+	
+	@Override
+	protected String CompletarURL() throws Exception {
+		return "enviarVentaXPDiaXVendedor?empresa="+ empresa + "&vendedor="+vendedor;
+	}
+
+	@Override
+	protected void procesarRespuesta(DataInputStream in)throws Exception {
+		int tipoActualizacion=0;
+		boolean yaBorre=false;
+		busquedaVenta=new BusquedaVentaPorDia(conte);
+		try {
+			while (true){
+				tipoActualizacion=in.readInt();
+				switch (tipoActualizacion) {
+				case 1299:	
+					break;
+				case 1201:	
+					if (yaBorre==false) {
+						busquedaVenta.eliminarVentas();
+						yaBorre=true;
+					}
+					Venta ventas=new Venta();
+					ventas.setPeriodo(in.readUTF());
+					ventas.setDia(in.readInt());
+					ventas.setImporte(in.readDouble());
+					ventas.setActualizacion(in.readLong());
+					busquedaVenta.modificarVentasConector(ventas);
+					break;
+				default:
+					break;
+				}
+			}		
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw new Exception(ex.getMessage());
+		}
+	}
+}

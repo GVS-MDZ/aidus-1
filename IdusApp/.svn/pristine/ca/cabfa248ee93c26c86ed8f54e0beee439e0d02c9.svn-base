@@ -1,0 +1,13 @@
+package com.gvs.exceptiones;
+
+public class ExceptionEncuesta extends Exception {
+	private static final long serialVersionUID = 1L;
+
+	public ExceptionEncuesta() {
+
+	}
+
+	public ExceptionEncuesta(String msg) {
+		super(msg);
+	}
+}

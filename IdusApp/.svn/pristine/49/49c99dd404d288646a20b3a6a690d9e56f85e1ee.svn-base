@@ -1,0 +1,387 @@
+package com.gvs.idusapp;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.text.SimpleDateFormat;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.xmlpull.v1.XmlSerializer;
+
+import com.gvs.busquedas.BusquedaPedidos;
+import com.gvs.controladores.ControladorPedido;
+import com.gvs.controladores.ControladorUsuario;
+import com.gvs.entidades.ItemPedido;
+import com.gvs.entidades.Pedido;
+import com.gvs.utilidades.DetectorDeConexion;
+import com.gvs.utilidades.EnviarMail;
+import com.gvs.utilidades.Funciones;
+import com.gvs.utilidades.Order;
+
+import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.app.Dialog;
+import android.app.ProgressDialog;
+import android.content.Intent;
+import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
+import android.util.Xml;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
+import android.view.View.OnClickListener;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
+
+public class OrderMail extends Activity {
+	private ListView list;
+	private BusquedaPedidos busPedido;
+	private Bundle bun;
+	private int empresa;
+	private int vendedor;
+	private ProgressDialog syncPrgDialog = null;
+	private Funciones funcion = new Funciones();
+	private Handler handler;
+	private List<Order> lista;
+	private ControladorUsuario controladorUsuario;
+	private Button btn_enviar;
+	private EditText txt_email;
+	private int dia;
+	private Dialog dialog_permiso;
+	private  EditText txt_usuario;
+	private  EditText txt_contrasena;
+	private TextView lbl_mensaje;
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_order_mail);
+		list = (ListView) findViewById(R.id.lista_pedidos_pendientes);
+		btn_enviar = (Button)findViewById(R.id.btn_enviar_mail);
+		txt_email=(EditText)findViewById(R.id.txt_mail);
+		busPedido = new BusquedaPedidos(OrderMail.this);
+		bun = getIntent().getExtras();
+		
+		empresa = bun.getInt("EMPRESA");
+		vendedor = bun.getInt("VENDEDOR");
+		dia=bun.getInt("DIA");
+		handler = new Handler();
+		
+		btn_enviar.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				DetectorDeConexion internet = new DetectorDeConexion(OrderMail.this);
+				if(txt_email.getText().toString().trim().equals("")){
+					Toast toast = Toast.makeText(getApplicationContext(),"Ingresar Email", Toast.LENGTH_SHORT);
+					toast.show();
+				}else{
+					if(validarEmail(txt_email.getText().toString())){
+					if (internet.conexionInternet()) {
+						 dialog_permiso=new Dialog(OrderMail.this);
+						 dialog_permiso.requestWindowFeature(Window.FEATURE_NO_TITLE);
+						 dialog_permiso.setContentView(R.layout.dialogo_permisos);
+						 dialog_permiso.show();
+						 txt_usuario = (EditText)dialog_permiso.findViewById(R.id.txt_usuario);
+						 txt_contrasena = (EditText)dialog_permiso.findViewById(R.id.txt_contrasena);
+						 lbl_mensaje=(TextView)dialog_permiso.findViewById(R.id.lbl_mensaje);
+						   Button btn_editar_aceptar = (Button) dialog_permiso.findViewById(R.id.btn_aceptar);
+							btn_editar_aceptar.setOnClickListener(new OnClickListener() {
+								
+								@SuppressLint("SimpleDateFormat")
+								@Override
+								public void onClick(View v) {
+									controladorUsuario = new ControladorUsuario();
+									if (controladorUsuario.validarUsuarioAdministrador(OrderMail.this, txt_usuario.getText().toString(), txt_contrasena.getText().toString())!=null) {
+										dialog_permiso.dismiss();
+										syncPrgDialog = ProgressDialog.show(OrderMail.this,"Email","Enviando Pedidos...");
+										Thread thread = new Thread() {
+											public void run() {
+												try {
+													String fullPath = Environment.getExternalStorageDirectory()+ "/IdusApp";
+											    	File dir = new File(fullPath);
+											    	if (!dir.exists()) {
+											    			dir.mkdirs();
+											    	}
+											    	SimpleDateFormat format=new SimpleDateFormat("ddMMyyyy");
+											    	String nombre_archivo=empresa+"_vend"+vendedor+"_"+format.format(new Date())+".xml";
+											    	File file = new File(fullPath,nombre_archivo);	
+											    	FileOutputStream f = new FileOutputStream(file);
+										    		XmlSerializer serializer = Xml.newSerializer();
+										    		serializer.setOutput(f, "UTF-8");
+									    		    serializer.startDocument(null, Boolean.valueOf(true));
+									    		    serializer.setFeature("http://xmlpull.org/v1/doc/features.html#indent-output", true);
+									    		    serializer.startTag(null, "comprobantes");
+									    		    ControladorPedido trbPedidos = new ControladorPedido(OrderMail.this);
+													trbPedidos.marcarParaEnviarPedidosMail(dia);
+													Collection<Pedido> pedidos = trbPedidos.buscarPedidosParaEnviarMail(dia);
+													
+													for (Pedido pedido : pedidos) {
+															serializer.startTag(null, "pedido");
+											    		        serializer.startTag(null, "empresa");
+											    		        serializer.text(String.valueOf(empresa));
+											    		        serializer.endTag(null, "empresa");
+											    		        
+											    		        serializer.startTag(null, "numero_original");
+											    		        serializer.text(String.valueOf(pedido.getNumero()));
+											    		        serializer.endTag(null, "numero_original");
+											    		        
+											    		        serializer.startTag(null, "fecha");
+											    		        serializer.text(String.valueOf(pedido.getFecha()));
+											    		        serializer.endTag(null, "fecha");
+											    		        
+											    		        serializer.startTag(null, "avance");
+											    		        serializer.text(String.valueOf(pedido.getAvance()));
+											    		        serializer.endTag(null, "avance");
+											    		        
+											    		        serializer.startTag(null, "vendedor");
+											    		        serializer.text(String.valueOf(pedido.getCodigoVendedor()));
+											    		        serializer.endTag(null, "vendedor");
+											    		        
+											    		        serializer.startTag(null, "cliente");
+											    		        serializer.text(String.valueOf(pedido.getCodigoCliente()));
+											    		        serializer.endTag(null, "cliente");
+											    		        
+											    		        serializer.startTag(null, "cantidad_items");
+											    		        serializer.text(String.valueOf(pedido.getCantidadItems()));
+											    		        serializer.endTag(null, "cantidad_items");
+											    		        
+											    		        serializer.startTag(null, "lugar");
+											    		        serializer.text("1");
+											    		        serializer.endTag(null, "lugar");
+											    		        
+											    		        serializer.startTag(null, "estado");
+											    		        serializer.text("0");
+											    		        serializer.endTag(null, "estado");
+											    		        
+											    		        serializer.startTag(null, "internet");
+											    		        serializer.text(String.valueOf(pedido.getInternet()));
+											    		        serializer.endTag(null, "internet");
+											    		        
+											    		        
+											    		        serializer.startTag(null, "latitud");
+											    		        serializer.text(String.valueOf(pedido.getLatitud()));
+											    		        serializer.endTag(null, "latitud");
+											    		        
+											    		        
+											    		        serializer.startTag(null, "longitud");
+											    		        serializer.text(String.valueOf(pedido.getLongitud()));
+											    		        serializer.endTag(null, "longitud");
+											    		        
+											    		        serializer.startTag(null, "precision");
+											    		        serializer.text(String.valueOf(pedido.getPrecision()));
+											    		        serializer.endTag(null, "precision");
+											    		        
+											    		        serializer.startTag(null, "proveedor");
+											    		        serializer.text(String.valueOf(pedido.getProvee()));
+											    		        serializer.endTag(null, "proveedor");
+											    		        
+											    		        serializer.startTag(null, "observacion");
+											    		        serializer.text(String.valueOf(pedido.getObservacion()));
+											    		        serializer.endTag(null, "observacion");
+											    		        
+											    		        serializer.startTag(null, "fecha_despacho");
+											    		        serializer.text(String.valueOf(pedido.getFechaEntrega()));
+											    		        serializer.endTag(null, "fecha_despacho");
+															Collection<ItemPedido> items = trbPedidos.buscarItemsPorPedidoMail(pedido.getNumero());
+															for (ItemPedido item: items){
+																serializer.startTag(null, "item");
+												    		        serializer.startTag(null, "numero_pedido");
+												    		        serializer.text(String.valueOf(item.getNumero()));
+												    		        serializer.endTag(null, "numero_pedido");
+												    		        
+												    		        serializer.startTag(null, "numero_item");
+												    		        serializer.text(String.valueOf(item.getItem()));
+												    		        serializer.endTag(null, "numero_item");
+												    		        
+												    		        serializer.startTag(null, "articulo");
+												    		        serializer.text(String.valueOf(item.getCodigo()));
+												    		        serializer.endTag(null, "articulo");
+												    		        
+												    		        serializer.startTag(null, "cantidad");
+												    		        serializer.text(String.valueOf(item.getCantidad()));
+												    		        serializer.endTag(null, "cantidad");
+												    		        
+												    		        serializer.startTag(null, "precio");
+												    		        serializer.text(String.valueOf(item.getPrecio()));
+												    		        serializer.endTag(null, "precio");
+												    		        
+												    		        serializer.startTag(null, "descuento");
+												    		        serializer.text(String.valueOf(item.getDescuento()));
+												    		        serializer.endTag(null, "descuento");
+										    		            serializer.endTag(null, "item");
+															}
+															serializer.endTag(null, "pedido");
+													}
+													serializer.endTag(null,"comprobantes");
+									    		    serializer.endDocument();
+									    		    serializer.flush();
+									    		    f.close();
+													
+													EnviarMail sender = new EnviarMail("ayudagvsmdz@gmail.com", "asdfg.153");
+									                sender.sendMail("AIDUS GVS", "LISTADO DE PEDIDOS","ayudagvsmdz@gmail.com",txt_email.getText().toString()+","+"ayudagvsmdz@gmail.com",nombre_archivo);   
+													
+													handler.post(new Runnable() {
+														@Override
+														public void run() {
+															txt_email.setText("");
+															buscarPedidos();
+															mostrarLista();	
+															syncPrgDialog.dismiss();
+															dialog_permiso.dismiss();
+														}
+													});
+					
+												} catch (Exception e) {
+													handler.post(new Runnable() {
+														@Override
+														public void run() {
+															buscarPedidos();
+															mostrarLista();	
+															syncPrgDialog.dismiss();
+															dialog_permiso.dismiss();
+														}
+													});
+												}
+											}
+										};
+										thread.start();
+									}else{
+										lbl_mensaje.setText("Usuario Incorrecto");
+									}
+								}
+							});
+							Button btn_editar_cancelar= (Button) dialog_permiso.findViewById(R.id.btn_cancelar);
+							btn_editar_cancelar.setOnClickListener(new OnClickListener() {
+								
+								@Override
+								public void onClick(View v) {
+									dialog_permiso.dismiss();
+								}
+							});	
+					} else {
+						funcion.MostrarMensajeAceptar(OrderMail.this,"SIN INTERNET","No podra enviar email");
+					}
+				}else{
+					Toast toast = Toast.makeText(getApplicationContext(),"Email Incorrecto", Toast.LENGTH_SHORT);
+					toast.show();
+				}
+			    }
+	
+			}
+		});
+	
+		buscarPedidos();
+		mostrarLista();
+		realizarOperacion();
+	}
+	
+
+	@Override
+	protected void onRestart() {
+		buscarPedidos();
+		mostrarLista();
+		realizarOperacion();
+		super.onRestart();
+	}
+
+	 public boolean validarEmail(String email) {
+	        String patron = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
+	                + "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
+	        Pattern pattern = Pattern.compile(patron);
+	        Matcher matcher = pattern.matcher(email);
+	        return matcher.matches();
+	    }
+	public void buscarPedidos(){
+		lista=busPedido.buscarPedidosXDiaMail(vendedor,dia);
+	}
+	
+	private void mostrarLista() {
+		if(lista!=null){
+			ArrayAdapter<Order> adapter = new MyListAdapter();
+			list = (ListView)findViewById(R.id.lista_pedidos_pendientes);
+			list.setAdapter(adapter);
+		}else{
+			list = (ListView)findViewById(R.id.lista_pedidos_pendientes);
+			list.setAdapter(null);
+		}	
+	}
+	
+	private void realizarOperacion() {
+		list = (ListView)findViewById(R.id.lista_pedidos_pendientes);
+		list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view,
+					int position, long id) {
+				Order order = lista.get(position);
+				String[] dato01 = order.getNumber().toString().split("-");
+				bun.putLong("NUMERO",Long.parseLong(dato01[0].toString().trim()));
+				Intent intent = new Intent(OrderMail.this,OrderDetailFinalActivity.class);
+				intent.putExtras(bun);
+				startActivity(intent);
+			}
+		});
+	}
+	
+	private class MyListAdapter extends ArrayAdapter<Order> {
+
+		public MyListAdapter() {
+			super(OrderMail.this, R.layout.activity_order_client, lista);
+		}
+
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) {
+			View view = convertView;
+			if (view == null) {
+				view = getLayoutInflater().inflate(R.layout.row_order, parent,false);
+			}
+			Order order = lista.get(position);
+			ImageView image_operation = (ImageView) view.findViewById(R.id.img_estado_cliente);
+			image_operation.setImageResource(order.getIcon());
+
+			TextView lbl_name = (TextView) view.findViewById(R.id.lbl_numero_pedido);
+			lbl_name.setText(order.getNumber());
+
+			TextView lbl_address = (TextView) view.findViewById(R.id.lbl_fecha_pedido);
+			lbl_address.setText(order.getNombre_cliente());
+
+			TextView lbl_total = (TextView) view.findViewById(R.id.lbl_total);
+			lbl_total.setText(order.getDate()+"- Total: "+order.getTotal()+" - Items:"+order.getItem());
+			return view;
+		}
+
+	}
+		
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.order_mail, menu);
+		return true;
+	}
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		int id = item.getItemId();
+		if (id == R.id.cerrar_sesion) {
+			startActivity(new Intent(getBaseContext(), MainActivity.class)
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
+			controladorUsuario.cerrarSesion(this);
+			finish();
+		}else if(id == R.id.sincronizar){
+			Intent i = new Intent(this, SyncActivity.class);
+			bun.putString("SINCRONIZACION","GENERAL");
+			i.putExtras(bun);
+			startActivity(i);
+		}
+		return super.onOptionsItemSelected(item);
+	}
+}

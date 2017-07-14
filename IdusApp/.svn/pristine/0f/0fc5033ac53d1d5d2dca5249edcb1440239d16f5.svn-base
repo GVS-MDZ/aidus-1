@@ -1,0 +1,83 @@
+package com.gvs.entidades;
+
+import android.os.Parcel;
+import android.os.Parcelable;
+
+public class Usuario  implements Parcelable{
+	private int id;
+	private String tipo;
+	private int empresa;
+	private int codigo;
+	private String nombre;
+	private String contrasena;
+	private int sesion;
+	
+	public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
+	}
+
+	public String getTipo() {
+		return tipo;
+	}
+
+	public void setTipo(String tipo) {
+		this.tipo = tipo;
+	}
+
+	public int getEmpresa() {
+		return empresa;
+	}
+
+	public void setEmpresa(int empresa) {
+		this.empresa = empresa;
+	}
+
+	public int getCodigo() {
+		return codigo;
+	}
+
+	public void setCodigo(int codigo) {
+		this.codigo = codigo;
+	}
+
+	public String getNombre() {
+		return nombre;
+	}
+
+	public void setNombre(String nombre) {
+		this.nombre = nombre;
+	}
+
+	public String getContrasena() {
+		return contrasena;
+	}
+
+	public void setContrasena(String contrasena) {
+		this.contrasena = contrasena;
+	}
+
+	public int getSesion() {
+		return sesion;
+	}
+
+	public void setSesion(int sesion) {
+		this.sesion = sesion;
+	}
+
+	@Override
+	public int describeContents() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public void writeToParcel(Parcel dest, int flags) {
+		// TODO Auto-generated method stub
+		
+	}
+	
+}

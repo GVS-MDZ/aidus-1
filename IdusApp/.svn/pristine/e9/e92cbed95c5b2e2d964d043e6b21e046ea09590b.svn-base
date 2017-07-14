@@ -1,0 +1,14 @@
+package com.gvs.exceptiones;
+
+public class ExceptionCobranza extends Exception {
+	private static final long serialVersionUID = 1L;
+
+	public ExceptionCobranza() {
+
+	}
+
+	public ExceptionCobranza(String msg) {
+		super(msg);
+	}
+}
+

@@ -1,0 +1,584 @@
+package com.gvs.busquedas;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.Vector;
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.SQLException;
+import android.database.sqlite.SQLiteDatabase;
+import com.gvs.entidades.CierresDeDia;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+
+public class BusquedasCierreDeDia {
+	private Context conte;
+	private Funciones funcion = new Funciones();
+	private int lVendedor;
+	
+	public BusquedasCierreDeDia(Context cont, int vendedor){
+		conte=cont;
+		lVendedor=vendedor;
+	}
+	public BusquedasCierreDeDia(Context cont){
+		conte=cont;
+	}
+	
+	public void guardarFinDeDia(int lVendedor,int cantidad,int ventas,int noVentas,int noEnviados,double cobGral,double cobEfe)throws Exception{
+		ContentValues contFD = new ContentValues();
+		Date fecha = new Date();
+		contFD.put("CODIGOVENDEDOR", lVendedor);
+		contFD.put("FECHA",fecha.getTime());
+		contFD.put("CLIENTESDELDIA", cantidad);
+		contFD.put("CLIENTESATENDIDOS", ventas);
+		contFD.put("CLIENTESNOATENDIDOS", noVentas);
+		contFD.put("PEDIDOSSINENVIAR",noEnviados);
+		contFD.put("MOTIVOSSINENVIAR", 0);
+		contFD.put("COBGENERAL", cobGral);
+		contFD.put("COBEFECTIVA",cobEfe);
+		contFD.put("ESTADO", 0);
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		try {
+			String Sql = "";
+			Cursor cur;
+			db.beginTransaction();
+			Sql = "SELECT * FROM FINESDEDIA WHERE CODIGOVENDEDOR=" + lVendedor + " AND FECHA=" + fecha.getTime();
+			cur = db.rawQuery(Sql, null);
+			if (cur.moveToNext()) {
+				db.update("FINESDEDIA", contFD, "CODIGOVENDEDOR=" + lVendedor + " AND FECHA=" + fecha.getTime(), null);
+			} else {
+				db.insert("FINESDEDIA", null, contFD);
+			}
+			db.setTransactionSuccessful();
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new Exception(e.getMessage());
+		} finally {
+			db.endTransaction();	
+		}	
+	}
+	
+	public int devolverCantidadClientesDelDia(int dia, int vendedor) throws Exception{
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		Cursor cur = null;
+		int cantidad=0;
+		try {
+			if(dia>0){
+				String Sql = "SELECT COUNT(V.DIAS) FROM CLIENTES AS C " +
+						"INNER JOIN VISITAS AS V ON C.CODIGO=V.CODIGOCLIENTE " +
+						"WHERE C.CODIGOVENDEDOR=" + lVendedor + 
+						" AND SUBSTR(V.DIAS," + dia +",1)='" + dia +"' AND C.CODIGOVENDEDOR=" + vendedor + " AND HAB=1";
+				cur = db.rawQuery(Sql, null);
+				if (cur.moveToNext()) {
+					cantidad = cur.getInt(0);
+				} else {
+					cantidad=0;
+				}
+				return cantidad;
+			}else{
+				String Sql = "SELECT COUNT(V.DIAS) FROM CLIENTES AS C " +
+						"INNER JOIN VISITAS AS V ON C.CODIGO=V.CODIGOCLIENTE " +
+						"WHERE C.CODIGOVENDEDOR=" + vendedor+" AND V.DIAS IN('0000000','8888888','9999999') AND HAB=1";
+				cur = db.rawQuery(Sql, null);
+				if (cur.moveToNext()) {
+					cantidad = cur.getInt(0);
+				} else {
+					cantidad=0;
+				}
+				return cantidad;
+			}	
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new Exception(e.getMessage());
+		}
+	}
+
+	public int devolverCantidadVendidos(int dia) throws Exception{
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		Cursor cur = null;
+		int cantidad=0;
+		try {
+			Date fecha = new Date();
+			String hoyTexto = funcion.dateToString_yyyymmdd(fecha.getTime());
+			Date fechaINI = funcion.stringToDate(hoyTexto);
+			String Sql="";
+			if(dia>0){
+				 Sql = "SELECT COUNT(A.CODIGOCLIENTE),NUMERO FROM PEDIDOSCABECERA AS A "
+							+ "INNER JOIN VISITAS AS V ON A.CODIGOCLIENTE=V.CODIGOCLIENTE "
+							+ "WHERE A.CODIGOVENDEDOR=" + lVendedor +" AND A.DIA= "+dia+
+							" AND A.FECHA BETWEEN " + fechaINI.getTime() + " AND " + fecha.getTime() + 
+							" AND A.ESTADO NOT IN(2) AND SUBSTR(V.DIAS," + dia +",1)='" + dia +"'"
+							+ "GROUP BY A.CODIGOCLIENTE";
+				
+		    }else{
+		    	 Sql = "SELECT COUNT(A.CODIGOCLIENTE),NUMERO FROM PEDIDOSCABECERA AS A "
+							+ "INNER JOIN VISITAS AS V ON A.CODIGOCLIENTE=V.CODIGOCLIENTE "
+							+ "WHERE A.CODIGOVENDEDOR=" + lVendedor +" AND A.DIA= "+dia+
+							" AND A.FECHA BETWEEN " + fechaINI.getTime() + " AND " + fecha.getTime() + 
+							" AND A.ESTADO NOT IN(2) AND V.DIAS IN('0000000','8888888','9999999') "
+							+ "GROUP BY A.CODIGOCLIENTE";
+		    }
+			
+			cur = db.rawQuery(Sql, null);
+			if (cur.getCount()>0) {
+				while (cur.moveToNext()){
+					cantidad++;
+				}
+			} else {
+				cantidad=0;
+			}
+			return cantidad;			
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new Exception(e.getMessage());
+		}
+	}
+	
+	public int devolverCantidadVendidosFR(int dia) throws Exception{
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		Cursor cur = null;
+		int cantidad=0;
+		try {
+			Date fecha = new Date();
+			String hoyTexto = funcion.dateToString_yyyymmdd(fecha.getTime());
+			Date fechaINI = funcion.stringToDate(hoyTexto);
+
+			String Sql = "SELECT COUNT(A.CODIGOCLIENTE),NUMERO FROM PEDIDOSCABECERA AS A "
+					+ "INNER JOIN VISITAS AS V ON A.CODIGOCLIENTE=V.CODIGOCLIENTE "
+					+ "WHERE A.CODIGOVENDEDOR=" + lVendedor + " " 
+					+ "AND A.FECHA BETWEEN " + fechaINI.getTime() + " AND " + fecha.getTime() + " "  
+					+ "AND A.ESTADO NOT IN(2) AND SUBSTR(V.DIAS," + dia +",1)='0' "
+					+ "GROUP BY A.CODIGOCLIENTE";
+			cur = db.rawQuery(Sql, null);
+			if (cur.getCount()>0) {
+				while (cur.moveToNext()){
+					cantidad++;
+				}
+			} else {
+				cantidad=0;
+			}
+			return cantidad;			
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new Exception(e.getMessage());
+		}
+	}
+		
+	public double devolverImportePedido(int dia) throws Exception{
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		Cursor cur = null;
+		double cantidad=0;
+		try {
+			Date fecha = new Date();
+			String hoyTexto = funcion.dateToString_yyyymmdd(fecha.getTime());
+			Date fechaINI = funcion.stringToDate(hoyTexto);
+			String Sql="";
+			if(dia>0){
+				 Sql = "SELECT SUM(B.CANTIDAD*B.PRECIO) FROM PEDIDOSCABECERA AS A "
+							+ "INNER JOIN PEDIDOSCUERPO AS B ON A.NUMERO=B.NUMERO "
+							+ "INNER JOIN VISITAS AS V ON A.CODIGOCLIENTE=V.CODIGOCLIENTE "
+							+ "WHERE A.CODIGOVENDEDOR=" + lVendedor +
+							" AND A.FECHA BETWEEN " + fechaINI.getTime() + " AND " + fecha.getTime() + 
+							" AND A.ESTADO NOT IN(2) AND SUBSTR(V.DIAS," + dia +",1)='" + dia +"'";
+			}else{
+				 Sql = "SELECT SUM(B.CANTIDAD*B.PRECIO) FROM PEDIDOSCABECERA AS A "
+							+ "INNER JOIN PEDIDOSCUERPO AS B ON A.NUMERO=B.NUMERO "
+							+ "INNER JOIN VISITAS AS V ON A.CODIGOCLIENTE=V.CODIGOCLIENTE "
+							+ "WHERE A.CODIGOVENDEDOR=" + lVendedor +
+							" AND A.FECHA BETWEEN " + fechaINI.getTime() + " AND " + fecha.getTime() + 
+							" AND A.ESTADO NOT IN(2) AND V.DIAS IN('0000000','8888888','9999999')";
+			}
+			
+			cur = db.rawQuery(Sql, null);
+			if (cur.moveToNext()) {
+				cantidad = cur.getDouble(0);
+			} else {
+				cantidad=0;
+			}
+			return cantidad;			
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new Exception(e.getMessage());
+		}
+	}
+	
+	public double devolverImportePedidoFR(int dia) throws Exception{
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		Cursor cur = null;
+		double cantidad=0;
+		try {
+			Date fecha = new Date();
+			String hoyTexto = funcion.dateToString_yyyymmdd(fecha.getTime());
+			Date fechaINI = funcion.stringToDate(hoyTexto);
+			String Sql="";
+			Sql="SELECT SUM(B.CANTIDAD*B.PRECIO) FROM PEDIDOSCABECERA AS A "
+					+ "INNER JOIN PEDIDOSCUERPO AS B ON A.NUMERO=B.NUMERO "
+					+ "INNER JOIN VISITAS AS V ON A.CODIGOCLIENTE=V.CODIGOCLIENTE "
+					+ "WHERE A.CODIGOVENDEDOR=" + lVendedor +
+					" AND A.FECHA BETWEEN " + fechaINI.getTime() + " AND " + fecha.getTime() + 
+					" AND A.ESTADO NOT IN(2) AND A.DIA !="+dia;
+			/*String Sql = "SELECT SUM(B.CANTIDAD*B.PRECIO) FROM PEDIDOSCABECERA AS A "
+					+ "INNER JOIN PEDIDOSCUERPO AS B ON A.NUMERO=B.NUMERO "
+					+ "INNER JOIN VISITAS AS V ON A.CODIGOCLIENTE=V.CODIGOCLIENTE "
+					+ "WHERE A.CODIGOVENDEDOR=" + lVendedor +
+					" AND A.FECHA BETWEEN " + fechaINI.getTime() + " AND " + fecha.getTime() + 
+					" AND A.ESTADO NOT IN(2) AND SUBSTR(V.DIAS," + dia +",1)='0'";*/
+			cur = db.rawQuery(Sql, null);
+			if (cur.moveToNext()) {
+				cantidad = cur.getDouble(0);
+			} else {
+				cantidad=0;
+			}
+			return cantidad;			
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new Exception(e.getMessage());
+		}
+	}
+	
+	public int devolverCantidadNoVendidos(int dia) throws Exception{
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		Cursor cur = null;
+		int cantidad=0;
+		try {
+			Date fecha = new Date();
+			String hoyTexto = funcion.dateToString_yyyymmdd(fecha.getTime());
+			Date fechaINI = funcion.stringToDate(hoyTexto);
+			String Sql="";
+			if(dia>0){
+				Sql = "SELECT COUNT(N.CODIGOCLIENTE) FROM NOATENDIDOS AS N " +
+						" INNER JOIN VISITAS AS V ON N.CODIGOCLIENTE=V.CODIGOCLIENTE" +
+						" WHERE N.CODIGOVENDEDOR=" + lVendedor +
+						" AND N.FECHA BETWEEN " + fechaINI.getTime() + " AND " + fecha.getTime() +
+						" AND SUBSTR(V.DIAS," + dia +",1)='" + dia +"'";
+			}else{
+				Sql = "SELECT COUNT(N.CODIGOCLIENTE) FROM NOATENDIDOS AS N " +
+						" INNER JOIN VISITAS AS V ON N.CODIGOCLIENTE=V.CODIGOCLIENTE" +
+						" WHERE N.CODIGOVENDEDOR=" + lVendedor +
+						" AND N.FECHA BETWEEN " + fechaINI.getTime() + " AND " + fecha.getTime() +
+						" AND V.DIAS IN('0000000','8888888','9999999')";
+			}
+			 
+			cur = db.rawQuery(Sql, null);
+			if (cur.moveToNext()) {
+				cantidad = cur.getInt(0);
+			} else {
+				cantidad=0;
+			}
+			return cantidad;			
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new Exception(e.getMessage());
+		}
+	}
+	
+	public int devolverCantidadNoEnviados(int dia) throws Exception{
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		
+		Cursor cur = null;
+		int cantidad=0;
+		Date fecha = new Date();
+		String hoyTexto = funcion.dateToString_yyyymmdd(fecha.getTime());
+		Date fechaINI = funcion.stringToDate(hoyTexto);
+		String Sql="";
+		try {
+			if(dia>0){
+				 Sql = "SELECT COUNT(A.CODIGOCLIENTE) FROM PEDIDOSCABECERA AS A "
+						+ "INNER JOIN VISITAS AS V ON A.CODIGOCLIENTE=V.CODIGOCLIENTE "
+						+ "WHERE A.CODIGOVENDEDOR=" + lVendedor +" AND A.DIA= "+dia+
+						" AND A.FECHA BETWEEN " + fechaINI.getTime() + " AND " + fecha.getTime() + 
+						" AND A.ESTADO NOT IN(1,2) AND SUBSTR(V.DIAS," + dia +",1)='" + dia +"'";
+			}else{
+				 Sql = "SELECT COUNT(A.CODIGOCLIENTE) FROM PEDIDOSCABECERA AS A "
+						+ "INNER JOIN VISITAS AS V ON A.CODIGOCLIENTE=V.CODIGOCLIENTE "
+						+ "WHERE A.CODIGOVENDEDOR=" + lVendedor +" AND A.DIA= "+dia+
+						" AND A.FECHA BETWEEN " + fechaINI.getTime() + " AND " + fecha.getTime() + 
+						" AND A.ESTADO NOT IN(1,2) AND V.DIAS IN('0000000','8888888','9999999')";
+			}
+		
+			cur = db.rawQuery(Sql, null);
+			if (cur.moveToNext()) {
+				cantidad = cur.getInt(0);
+			} else {
+				cantidad=0;
+			}
+			return cantidad;			
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new Exception(e.getMessage());
+		}
+	}
+
+	public boolean realizoCierreDiaAnterior(int codigoVendedor){
+		try{
+			Date fecha=new Date();
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		
+			String Sql = "SELECT MAX(FECHA) FROM PEDIDOSCABECERA WHERE CODIGOVENDEDOR="+codigoVendedor;
+			Cursor cur = db.rawQuery(Sql, null);
+			Long lfecha=null;
+			if (cur.moveToNext()){
+				if (cur.getString(0)!=null){
+					lfecha= cur.getLong(0);
+				}
+			} 
+			boolean ok=false;
+			if(lfecha!=null){
+				String fecha_pedido = funcion.dateToString_yyyymmdd(lfecha);
+				Date fechaPedido = funcion.stringToDate(fecha_pedido);
+				
+				String hoyTexto = funcion.dateToString_yyyymmdd(fecha.getTime());
+				Date fechaFin = funcion.stringToDate(hoyTexto);
+				
+				if(!fechaPedido.equals(fechaFin)){
+					String Sql2 = "SELECT COUNT(*) FROM FINESDEDIA WHERE FECHA BETWEEN " + lfecha + " AND " + fechaFin.getTime()+" ";
+					Cursor cur2 = db.rawQuery(Sql2, null);
+					cur2.moveToFirst();	
+					int cantidad=cur2.getInt(0);				
+					if(cantidad>0){
+						ok= true;
+					}
+				}else{
+					ok=true;
+				}
+		  }else{
+			  ok=true;
+		  }
+		return ok;
+		}catch(Exception ex){
+			return false;
+		}
+	}
+	
+	public void realizarCierreDiaPendiente(){
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		try {
+			String Sql1 = "SELECT MAX(FECHA) FROM PEDIDOSCABECERA WHERE CODIGOVENDEDOR="+lVendedor;
+			Cursor cur1 = db.rawQuery(Sql1, null);
+			Long lfecha=null;
+			Date fecha=null;
+			if (cur1.moveToNext()){
+				if (cur1.getString(0)!=null){
+					lfecha= cur1.getLong(0);
+					fecha=new Date(lfecha);
+				}
+			}
+			
+			String Sql2 = "SELECT DIA FROM PEDIDOSCABECERA WHERE CODIGOVENDEDOR="+lVendedor+" AND FECHA >= " + fecha.getTime() +" GROUP BY DIA";
+			Cursor cur2 = db.rawQuery(Sql2, null);
+			if(cur2.getCount()>0){
+				while (cur2.moveToNext()){
+					int dia=cur2.getInt(cur2.getColumnIndex("DIA"));	
+					int cantidad = devolverCantidadClientesDelDiaPendiente(dia, lVendedor);
+					int ventas = devolverCantidadVendidosPendiente(dia,fecha);
+					int noVentas = devolverCantidadNoVendidosPendiente(dia,fecha);
+					int noEnviados =devolverCantidadNoEnviadosPendiente(dia,fecha);
+					double cobGral = (double)(ventas* 100)/(ventas + noVentas);
+					double cobEfe = (double)(ventas*100)/cantidad;
+					ContentValues contFD = new ContentValues();
+		
+					contFD.put("CODIGOVENDEDOR", lVendedor);
+					contFD.put("FECHA",fecha.getTime());
+					contFD.put("CLIENTESDELDIA", cantidad);
+					contFD.put("CLIENTESATENDIDOS", ventas);
+					contFD.put("CLIENTESNOATENDIDOS", noVentas);
+					contFD.put("PEDIDOSSINENVIAR",noEnviados);
+					contFD.put("MOTIVOSSINENVIAR", 0);
+					contFD.put("COBGENERAL", cobGral);
+					contFD.put("COBEFECTIVA",cobEfe);
+					contFD.put("ESTADO", 0);
+					db.beginTransaction();
+				    db.insert("FINESDEDIA", null, contFD);	
+					db.setTransactionSuccessful();
+				}
+			}
+		} catch (Exception e) {
+			funcion.MostrarMensajeAceptar(conte, "ERROR", e.getMessage());
+		} finally {
+			db.endTransaction();	
+		}		
+	}
+	
+	public int devolverCantidadClientesDelDiaPendiente(int dia, int vendedor) throws Exception{
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		Cursor cur = null;
+		int cantidad=0;
+		try {
+			String Sql = "SELECT COUNT(V.DIAS) FROM CLIENTES AS C " +
+					"INNER JOIN VISITAS AS V ON C.CODIGO=V.CODIGOCLIENTE " +
+					"WHERE C.CODIGOVENDEDOR=" + lVendedor + 
+					" AND SUBSTR(V.DIAS," + dia +",1)='" + dia +"' AND C.CODIGOVENDEDOR=" + vendedor + " AND HAB=1";
+			cur = db.rawQuery(Sql, null);
+			if (cur.moveToNext()) {
+				cantidad = cur.getInt(0);
+			} else {
+				cantidad=0;
+			}
+			return cantidad;
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new Exception(e.getMessage());
+		}
+	}
+	
+	public int devolverCantidadVendidosPendiente(int dia,Date fecha_pendiente) throws Exception{
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		Cursor cur = null;
+		int cantidad=0;
+		try {
+			Date fecha_actual = new Date();
+			String hoyTexto = funcion.dateToString_yyyymmdd(fecha_pendiente.getTime());
+			Date fechaINI = funcion.stringToDate(hoyTexto);
+
+			String Sql = "SELECT COUNT(A.CODIGOCLIENTE),NUMERO FROM PEDIDOSCABECERA AS A "
+					+ "INNER JOIN VISITAS AS V ON A.CODIGOCLIENTE=V.CODIGOCLIENTE "
+					+ "WHERE A.CODIGOVENDEDOR=" + lVendedor +" AND A.DIA= "+dia+
+					" AND A.FECHA BETWEEN " + fechaINI.getTime() + " AND " + fecha_actual.getTime() + 
+					" AND A.ESTADO NOT IN(2) AND SUBSTR(V.DIAS," + dia +",1)='" + dia +"'"
+					+ "GROUP BY A.CODIGOCLIENTE";
+			
+			cur = db.rawQuery(Sql, null);
+			if (cur.getCount()>0) {
+				while (cur.moveToNext()){
+					cantidad++;
+				}
+			} else {
+				cantidad=0;
+			}
+			return cantidad;			
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new Exception(e.getMessage());
+		}
+	}
+
+	public int devolverCantidadNoVendidosPendiente(int dia,Date fecha_pendiente) throws Exception{
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		Cursor cur = null;
+		int cantidad=0;
+		try {
+			Date fecha_actual = new Date();
+			String hoyTexto = funcion.dateToString_yyyymmdd(fecha_pendiente.getTime());
+			Date fechaINI = funcion.stringToDate(hoyTexto);
+
+			String Sql = "SELECT COUNT(N.CODIGOCLIENTE) FROM NOATENDIDOS AS N " +
+					" INNER JOIN VISITAS AS V ON N.CODIGOCLIENTE=V.CODIGOCLIENTE" +
+					" WHERE N.CODIGOVENDEDOR=" + lVendedor +
+					" AND N.FECHA BETWEEN " + fechaINI.getTime() + " AND " + fecha_actual.getTime() +
+					" AND SUBSTR(V.DIAS," + dia +",1)='" + dia +"'";
+			cur = db.rawQuery(Sql, null);
+			if (cur.moveToNext()) {
+				cantidad = cur.getInt(0);
+			} else {
+				cantidad=0;
+			}
+			return cantidad;			
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new Exception(e.getMessage());
+		}
+	}
+	
+	public int devolverCantidadNoEnviadosPendiente(int dia,Date fecha_pendiente) throws Exception{
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		
+		Cursor cur = null;
+		int cantidad=0;
+		Date fecha_actual = new Date();
+		String hoyTexto = funcion.dateToString_yyyymmdd(fecha_pendiente.getTime());
+		Date fechaINI = funcion.stringToDate(hoyTexto);
+		try {
+		String Sql = "SELECT COUNT(A.CODIGOCLIENTE) FROM PEDIDOSCABECERA AS A "
+					+ "INNER JOIN VISITAS AS V ON A.CODIGOCLIENTE=V.CODIGOCLIENTE "
+					+ "WHERE A.CODIGOVENDEDOR=" + lVendedor +" AND A.DIA= "+dia+
+					" AND A.FECHA BETWEEN " + fechaINI.getTime() + " AND " + fecha_actual.getTime() + 
+					" AND A.ESTADO NOT IN(1,2) AND SUBSTR(V.DIAS," + dia +",1)='" + dia +"'";
+			cur = db.rawQuery(Sql, null);
+			if (cur.moveToNext()) {
+				cantidad = cur.getInt(0);
+			} else {
+				cantidad=0;
+			}
+			return cantidad;			
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new Exception(e.getMessage());
+		}
+	}
+	
+	public boolean marcarParaEnviar() throws Exception {
+		try {
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			String Sql=""; 
+			Sql = "UPDATE FINESDEDIA SET ESTADO=11 WHERE ESTADO=0";
+			db.execSQL(Sql);
+			return true;
+		} catch (SQLException e) {
+			e.printStackTrace();
+			throw new Exception("ERROR:Al intentar marcar fines de día para ser enviados. " +
+					"Pongase en contacto con la mesa de ayuda. Error: " + e.getMessage());
+		}
+	}
+	
+	public Collection<CierresDeDia> buscarNoAtendidosParaEnviar() throws Exception{
+		try {
+			Vector<CierresDeDia> cierres = new Vector<CierresDeDia>();
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			String Sql = "SELECT * FROM FINESDEDIA WHERE ESTADO=11";
+			Cursor cur = db.rawQuery(Sql, null);
+			if (cur.getColumnCount()>0){
+				while (cur.moveToNext()){
+					CierresDeDia cierre = new CierresDeDia();
+					cierre.setCodigoVendedor(cur.getInt(cur.getColumnIndex("CODIGOVENDEDOR")));
+					cierre.setFecha(cur.getLong(cur.getColumnIndex("FECHA")));
+					cierre.setClientesDelDia(cur.getInt(cur.getColumnIndex("CLIENTESDELDIA")));
+					cierre.setClientesAtendidos(cur.getInt(cur.getColumnIndex("CLIENTESATENDIDOS")));
+					cierre.setClientesNoAtendidos(cur.getInt(cur.getColumnIndex("CLIENTESNOATENDIDOS")));
+					cierre.setPedidosSinEnviar(cur.getInt(cur.getColumnIndex("PEDIDOSSINENVIAR")));
+					cierre.setMotivosSinEnviar(cur.getInt(cur.getColumnIndex("MOTIVOSSINENVIAR")));
+					cierre.setCobGeneral(cur.getDouble(cur.getColumnIndex("COBGENERAL")));
+					cierre.setCobEfectiva(cur.getDouble(cur.getColumnIndex("COBEFECTIVA")));
+					cierre.setEstado(cur.getInt(cur.getColumnIndex("ESTADO")));
+					cierres.add(cierre);
+				}
+			}
+			return cierres;
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new Exception(e.getMessage());
+		}
+	}
+	
+	public void modificarCierreDiaConector(CierresDeDia cierreDia){
+		funcion=new Funciones(conte);
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		String Sql = "SELECT * FROM FINESDEDIA WHERE CODIGOVENDEDOR=" + cierreDia.getCodigoVendedor() + " AND FECHA=" + cierreDia.getFecha();
+		Cursor cur = db.rawQuery(Sql, null);
+		ContentValues cont = new ContentValues();
+		if (cur.moveToNext()) {
+			cont.put("ESTADO", 1);
+			cont.put("FECHAENVIADO", new Date().getTime());
+			cont.put("INTERNET",funcion.estadoRedes());
+			db.update("FINESDEDIA", cont, "CODIGOVENDEDOR=" + cierreDia.getCodigoVendedor() + " AND FECHA=" + cierreDia.getFecha(),null);
+		} 
+	}
+}

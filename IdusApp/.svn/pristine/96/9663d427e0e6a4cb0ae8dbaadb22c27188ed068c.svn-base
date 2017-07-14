@@ -1,0 +1,42 @@
+package com.gvs.conectoras;
+
+import java.io.DataInputStream;
+import android.content.Context;
+import com.gvs.busquedas.BusquedaCobranza;
+import com.gvs.entidades.Configuracion;
+import com.gvs.entidades.Gain;
+
+public class ConectorCobranza extends ConectorGeneral{
+
+	private Context conte;
+	int empresa;
+	private Gain gain;
+	private BusquedaCobranza busquedaCobranza;
+	
+	public ConectorCobranza(Configuracion conf, Context conte,int empresa,Gain gain) {
+		super(conf);
+		this.conte = conte;
+		this.empresa=empresa;
+		this.gain=gain;
+	}
+
+	@Override
+	protected String CompletarURL() throws Exception {
+		String strUrl="abmCobranzas?empresa=" + empresa +"&vendedor="+gain.getCodigo_vendedor()+"&cliente="+gain.getCodigo_cliente()+"&fechaCelular="+gain.getFecha()+"" +
+				"&clase="+gain.getClase()+"&tipo="+gain.getTipo()+"&sucursal="+gain.getSucursal()+"&numeroComprobante="+gain.getNumero_comprobante()+"" +
+				"&numeroRecibo="+gain.getNumero_recibo()+"&saldo="+gain.getSaldo()+"&importe_pagado="+gain.getImporte_pagado()+"&estado="+gain.getEstado()+"";
+		return strUrl;
+	}
+
+	@Override
+	protected void procesarRespuesta(DataInputStream in)throws Exception {
+		try {
+			busquedaCobranza=new BusquedaCobranza(conte);
+			busquedaCobranza.modificarCobranzaConector(gain);
+		} catch (Exception e) {
+			throw new Exception(e.getMessage());
+		}finally{
+			in.close();
+		}
+	}
+}

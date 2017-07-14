@@ -1,0 +1,28 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+	<TextView
+        android:id="@+id/lbl_cliente"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
+        android:background="#696969"
+        android:textColor="#FFFFFF"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        android:text="" />
+	 <View
+        android:layout_width="fill_parent"
+        android:layout_height="2dp"
+        android:background="#008B8B" />
+
+    <ListView
+        android:id="@+id/lista_encuesta"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" >
+    </ListView>
+  
+</LinearLayout>

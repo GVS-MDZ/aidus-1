@@ -1,0 +1,223 @@
+package com.gvs.idusapp;
+
+import java.util.Collection;
+import java.util.List;
+
+import com.gvs.busquedas.BusquedaPedidos;
+import com.gvs.conectoras.ConectorActualizacionStock;
+import com.gvs.conectoras.ConectorGeneral;
+import com.gvs.conectoras.ConectorPedido;
+import com.gvs.controladores.ControladorPedido;
+import com.gvs.controladores.ControladorUsuario;
+import com.gvs.entidades.Configuracion;
+import com.gvs.entidades.Pedido;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.DetectorDeConexion;
+import com.gvs.utilidades.Funciones;
+import com.gvs.utilidades.Order;
+
+import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
+import android.os.Bundle;
+import android.os.Handler;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.View.OnClickListener;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.TextView;
+
+public class OrderClientActivity extends Activity {
+	private ListView list;
+	private TextView lbl_cliente;
+	private BusquedaPedidos busPedido;
+	private Bundle bun;
+	private int empresa;
+	private int vendedor;
+	private ProgressDialog syncPrgDialog = null;
+	private Funciones funcion = new Funciones();
+	private Handler handler;
+	private List<Order> lista;
+	private ControladorUsuario controladorUsuario;
+	private Button btn_enviar;
+	private int dia;
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_order_client);
+		list = (ListView) findViewById(R.id.lista_historico_cliente);
+		btn_enviar = (Button)findViewById(R.id.btn_enviar2);
+		lbl_cliente = (TextView) findViewById(R.id.lbl_cliente);
+		busPedido = new BusquedaPedidos(OrderClientActivity.this);
+		bun = getIntent().getExtras();
+		controladorUsuario = new ControladorUsuario();
+		String[] cliente=bun.getString("DATO01").split("-");
+		lbl_cliente.setText(cliente[1]);
+		empresa = bun.getInt("EMPRESA");
+		vendedor = bun.getInt("VENDEDOR");
+		dia=bun.getInt("DIA");
+		handler = new Handler();
+		
+		btn_enviar.setOnClickListener(new OnClickListener() {
+			
+			public void onClick(View v) {
+					final Configuracion configuracion = funcion.devolverConfiguracion(OrderClientActivity.this);
+					DetectorDeConexion internet = new DetectorDeConexion(OrderClientActivity.this);
+					syncPrgDialog = ProgressDialog.show(OrderClientActivity.this,"Sincronizando","Enviando pedidos...");
+					if (internet.conexionInternet()) {
+						Thread thread = new Thread() {
+							public void run() {
+								try {
+									ControladorPedido trbPedidos = new ControladorPedido(OrderClientActivity.this);
+									trbPedidos.marcarParaEnviarPedidos(dia);
+									Collection<Pedido> pedidos = trbPedidos.buscarPedidosParaEnviar(dia);
+									BaseDeDatos baseDeDatos = new BaseDeDatos(OrderClientActivity.this, funcion.BaseDeDatos(), null, funcion.Version());
+									SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+									String Sql="";
+									for (Pedido pedido : pedidos) {
+										try{
+										ConectorGeneral conectorPedido = new ConectorPedido(configuracion,OrderClientActivity.this, pedido,empresa, vendedor);
+									    conectorPedido.correr(OrderClientActivity.this);
+										Sql = "UPDATE PEDIDOSCABECERA SET ESTADO=1 WHERE (ESTADO=11 OR ESTADO=12) AND NUMERO=" + pedido.getNumero();
+										db.execSQL(Sql);
+										}catch(Exception ex){
+											Sql = "UPDATE PEDIDOSCABECERA SET ESTADO=12 WHERE ESTADO=11 AND NUMERO=" +  pedido.getNumero();
+											db.execSQL(Sql);
+											Sql = "UPDATE PEDIDOSCUERPO SET ESTADO=12 WHERE ESTADO=11 AND NUMERO=" +  pedido.getNumero();
+											db.execSQL(Sql);	
+											continue;
+										}
+									}
+									ConectorGeneral conectorStock = new ConectorActualizacionStock(configuracion, empresa, 1,OrderClientActivity.this);
+									conectorStock.correr(OrderClientActivity.this);
+									handler.post(new Runnable() {
+										@Override
+										public void run() {
+											buscarPedidos();
+											mostrarLista();	
+											syncPrgDialog.dismiss();
+										}
+									});
+	
+								} catch (Exception e) {
+									handler.post(new Runnable() {
+										@Override
+										public void run() {
+											buscarPedidos();
+											mostrarLista();	
+											syncPrgDialog.dismiss();
+										}
+									});
+								}
+							}
+						};
+						thread.start();
+					} else {
+						funcion.MostrarMensajeAceptar(OrderClientActivity.this,"SIN INTERNET","No podra sincronizar hasta que esté conectado a internet");
+					}
+				}
+			});
+		
+		buscarPedidos();
+		mostrarLista();
+		realizarOperacion();
+	}
+
+	@Override
+	protected void onRestart() {
+		buscarPedidos();
+		mostrarLista();
+		realizarOperacion();
+		super.onRestart();
+	}
+	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.order_client, menu);
+		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		int id = item.getItemId();
+		if (id == R.id.cerrar_sesion) {
+			startActivity(new Intent(getBaseContext(), MainActivity.class)
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
+			controladorUsuario.cerrarSesion(this);
+			finish();
+		}else if(id == R.id.sincronizar){
+			Intent i = new Intent(this, SyncActivity.class);
+			bun.putString("SINCRONIZACION","GENERAL");
+			i.putExtras(bun);
+			startActivity(i);
+		}
+		return super.onOptionsItemSelected(item);
+	}
+	
+	public void buscarPedidos(){
+		lista=busPedido.buscarPedidosXCliente(dia,bun.getInt("CODIGOCLIENTE"), bun.getInt("VENDEDOR"));
+	}
+	
+	private void mostrarLista() {
+		if(lista!=null){
+		ArrayAdapter<Order> adapter = new MyListAdapter();
+		list = (ListView) findViewById(R.id.lista_historico_cliente);
+		list.setAdapter(adapter);
+		}
+	}
+	
+	private void realizarOperacion() {
+		list = (ListView) findViewById(R.id.lista_historico_cliente);
+		
+		list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view,int position, long id) {
+				Order order = lista.get(position);
+				String[] dato01 = order.getNumber().toString().split("-");
+				bun.putLong("NUMERO",Long.parseLong(dato01[0].toString().trim()));
+				Intent intent = new Intent(OrderClientActivity.this,OrderDetailFinalActivity.class);
+				intent.putExtras(bun);
+				startActivity(intent);
+			}
+		});
+	}
+	
+	private class MyListAdapter extends ArrayAdapter<Order> {
+
+		public MyListAdapter() {
+			super(OrderClientActivity.this, R.layout.activity_order_client, lista);
+		}
+
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) {
+			View view = convertView;
+			if (view == null) {
+				view = getLayoutInflater().inflate(R.layout.row_order, parent,false);
+			}
+			Order order = lista.get(position);
+			ImageView image_operation = (ImageView) view.findViewById(R.id.img_estado_cliente);
+			image_operation.setImageResource(order.getIcon());
+
+			TextView lbl_name = (TextView) view.findViewById(R.id.lbl_numero_pedido);
+			lbl_name.setText(order.getNumber());
+
+			TextView lbl_address = (TextView) view.findViewById(R.id.lbl_fecha_pedido);
+			lbl_address.setText(order.getDate());
+			
+			TextView lbl_items = (TextView) view.findViewById(R.id.lbl_items_pedido);
+			lbl_items.setText(order.getItem());
+			return view;
+		}
+
+	}
+
+
+}

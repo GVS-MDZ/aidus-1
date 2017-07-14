@@ -1,0 +1,225 @@
+package com.gvs.idusapp;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import com.gvs.controladores.ControladorNoAtendido;
+import com.gvs.controladores.ControladorUsuario;
+import com.gvs.entidades.Configuracion;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.ContentValues;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ListView;
+import android.widget.SimpleAdapter;
+import android.widget.TextView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.Toast;
+
+public class MotiveActivity extends Activity {
+	private ListView list;
+	private Funciones funcion;
+	private AlertDialog.Builder dialogo1;
+	private TextView lbl_cliente;
+	private Bundle bun ;	
+	private int codigoMotivo =0;
+	private LocationManager locManager;
+	private LocationListener locLis;	
+	private double latitud=0;
+	private double longitud=0;
+	private double precision=0;
+	private String proveedor="";
+	private int codigoCliente;
+	private int codigoVendedor ;
+	private ControladorUsuario controladorUsuario;
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_motive);
+		funcion = new Funciones();
+		lbl_cliente=(TextView)findViewById(R.id.lbl_cliente);
+		list = (ListView) findViewById(R.id.lista_motivos);
+		dialogo1 = new AlertDialog.Builder(this);
+		bun = getIntent().getExtras();
+		controladorUsuario = new ControladorUsuario();
+		String[] cliente=bun.getString("DATO01").split("-");
+		lbl_cliente.setText(cliente[1]);
+		codigoCliente = bun.getInt("CODIGOCLIENTE");
+	    codigoVendedor = bun.getInt("VENDEDOR");
+		llenarListaDos(listarMotivosDeNoVenta());
+		final Configuracion configuracion = funcion.devolverConfiguracion(MotiveActivity.this);
+		if (configuracion.getServicioGeo()==1){
+			comenzarLocalizacion();
+		}
+		list.setOnItemClickListener(new OnItemClickListener() {
+			@Override
+			public void onItemClick(AdapterView<?> arg0, View v, int position,long arg3) {
+				
+				HashMap<String, String> map = (HashMap<String, String>) list.getItemAtPosition(position);		
+				String[] dato01 = map.get("DATO09").toString().split("-");
+			    codigoMotivo = Integer.parseInt(dato01[0].toString().trim());
+				dialogo1.setTitle("MOTIVO");
+				dialogo1.setMessage("¿ "+dato01[1]+" ?");
+				dialogo1.setCancelable(false);
+				dialogo1.setPositiveButton("Confirmar",new DialogInterface.OnClickListener() {
+							public void onClick(DialogInterface dialogo1, int id) {
+								btnAceptarDialogo();
+							}
+						});
+				dialogo1.setNegativeButton("Cancelar",new DialogInterface.OnClickListener() {
+							public void onClick(DialogInterface dialogo1, int id) {
+								btnCancelarDialogo();
+							}
+						});
+				dialogo1.show();
+				
+			}
+		});
+	}
+
+	private void btnAceptarDialogo(){
+		try {
+				ControladorNoAtendido noAtendidos = new ControladorNoAtendido(MotiveActivity.this);				
+				ContentValues conMotivos = new ContentValues();
+				conMotivos.put("CODIGOCLIENTE", codigoCliente);
+				conMotivos.put("CODIGOVENDEDOR", codigoVendedor);
+				conMotivos.put("FECHA", new Date().getTime());
+				conMotivos.put("CODIGOMOTIVO", codigoMotivo);
+				conMotivos.put("LATITUD", latitud);
+				conMotivos.put("LONGITUD", longitud);
+				conMotivos.put("PRECISION", precision);
+				conMotivos.put("PROVEE", proveedor);
+				conMotivos.put("ESTADO", 0);
+			    noAtendidos.grabarNoAtendido(conMotivos);
+			    Toast t=Toast.makeText(this,"El Motivo se guardo correctamente", Toast.LENGTH_SHORT);
+			     t.show();
+				finish();
+			} catch (Exception e) {
+				funcion.MostrarMensajeAceptar(MotiveActivity.this, "ERROR ", "No se pudo guardar el motivo de no venta" );
+			}		
+	}
+	
+	private void btnCancelarDialogo(){
+
+	}
+	
+	private List<Map<String, String>> listarMotivosDeNoVenta() {
+		BaseDeDatos baseDeDatos = new BaseDeDatos(MotiveActivity.this,
+				funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		String Sql = "SELECT * FROM MOTIVOS ORDER BY NOMBRE";
+		Cursor cur = db.rawQuery(Sql, null);
+		if (cur.getCount() > 0) {
+			List<Map<String, String>> list = new ArrayList<Map<String, String>>();
+			while (cur.moveToNext()) {
+				Map<String, String> datum = new HashMap<String, String>();
+				datum.put("DATO09",funcion.format(cur.getInt(cur.getColumnIndex("CODIGO")), 3)
+								+ " - "+ cur.getString(cur.getColumnIndex("NOMBRE")));
+				list.add(datum);
+			}
+			return list;
+		} else {
+			return null;
+		}
+
+	}
+
+	private void llenarListaDos(List<Map<String, String>> list) {
+		if (list != null) {
+			SimpleAdapter adapter = new SimpleAdapter(this, list,
+					android.R.layout.simple_list_item_2,
+					new String[] { "DATO09" }, new int[] { android.R.id.text1 });
+			this.list.setAdapter(adapter);
+		}
+	}
+
+	private void comenzarLocalizacion(){
+		try{
+			locManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+			if (locManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+				locManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+			} else {
+				if (locManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)){
+					locManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+				} 
+			}
+		} catch (Exception e){
+			e.printStackTrace();
+		}
+				
+		locLis = new LocationListener() {
+			
+			@Override
+			public void onStatusChanged(String provider, int status, Bundle extras) {
+				proveedor=provider;
+			}
+			
+			@Override
+			public void onProviderEnabled(String provider) {
+			}
+			
+			@Override
+			public void onProviderDisabled(String provider) {
+
+			}
+			
+			@Override
+			public void onLocationChanged(Location location) {
+				latitud=location.getLatitude();
+				longitud=location.getLongitude();
+				precision=location.getAccuracy();
+				proveedor=location.getProvider();
+			}
+
+		};
+		
+		if (locManager.isProviderEnabled(LocationManager.GPS_PROVIDER)){
+			locManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 100, locLis);
+		} else {
+			if (locManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+				locManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000, 100, locLis);
+			} 
+		}
+		
+	}
+	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.motive, menu);
+		return true;
+	}
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		int id = item.getItemId();
+		if (id == R.id.cerrar_sesion) {
+			startActivity(new Intent(getBaseContext(), MainActivity.class)
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
+			controladorUsuario.cerrarSesion(this);
+			finish();
+		}else if(id == R.id.sincronizar){
+			Intent i = new Intent(this, SyncActivity.class);
+			bun.putString("SINCRONIZACION","GENERAL");
+			i.putExtras(bun);
+			startActivity(i);
+		}
+		return super.onOptionsItemSelected(item);
+	}
+
+}

@@ -1,0 +1,16 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.gvs.idusapp.CustomerInformationActivity" >
+    
+    <item
+        android:id="@+id/cerrar_sesion"
+        android:orderInCategory="100"
+        android:showAsAction="never"
+        android:title="Salir"/>
+     <item
+        android:id="@+id/sincronizar"
+        android:orderInCategory="100"
+        android:showAsAction="never"
+        android:title="Sincronizar"/>
+
+</menu>

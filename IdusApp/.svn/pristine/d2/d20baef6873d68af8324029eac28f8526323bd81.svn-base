@@ -1,0 +1,80 @@
+package com.gvs.busquedas;
+
+import java.util.ArrayList;
+import java.util.List;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Color;
+import com.gvs.entidades.Articulos;
+import com.gvs.entidades.ItemPedido;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+import com.gvs.utilidades.OrderDetail;
+
+public class BusquedaItemsPedido {
+	private Context conte;
+	private Funciones funcion = new Funciones();
+	
+	public BusquedaItemsPedido(Context cont){
+		conte=cont;
+	}
+	
+	public List<OrderDetail>  listarItemsDelPedidos(long numero){
+		
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		
+		String Sql = "SELECT * FROM PEDIDOSCUERPO WHERE NUMERO=" + numero + " AND ESTADO<90 ORDER BY NUMEROITEM";
+		Cursor cur = db.rawQuery(Sql, null);
+		if (cur.getCount()>0){
+			List<OrderDetail>list=new ArrayList<OrderDetail>();
+			while (cur.moveToNext()){
+				BusquedaArticulos busArt = new BusquedaArticulos(conte);
+				String codigoArticulo = cur.getString(cur.getColumnIndex("CODIGOARTICULO")); 
+				Articulos art = busArt.buscarPorCodigo(codigoArticulo);
+				if (art!=null){
+					OrderDetail detail=new OrderDetail();
+					detail.setDescripcion(funcion.format(cur.getInt(cur.getColumnIndex("NUMEROITEM")),3) + " - " + art.getDetalle());
+					detail.setCantidad("Cantidad: "+ cur.getDouble(cur.getColumnIndex("CANTIDAD")));
+					detail.setDescuento("Descuento: "+cur.getDouble(cur.getColumnIndex("DESCUENTO"))+" %");
+					if(cur.getDouble(cur.getColumnIndex("DESCUENTO"))<10){
+						detail.setColor_descuento(Color.parseColor("#008000"));
+					}else if(cur.getDouble(cur.getColumnIndex("DESCUENTO"))>=10 && cur.getDouble(cur.getColumnIndex("DESCUENTO"))<=22){
+						detail.setColor_descuento(Color.parseColor("#FF8C00"));
+					}else{
+						detail.setColor_descuento(Color.RED);
+					}
+					detail.setPrecio("Precio: $" + funcion.formatDecimal(cur.getDouble(cur.getColumnIndex("PRECIO")),2));
+					
+					list.add(detail);
+				}
+			}
+			return list;
+		} else {
+			return null;
+		}
+		
+	}
+	
+	public ItemPedido buscarItem(long numero, int item){
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		
+		String Sql = "SELECT * FROM PEDIDOSCUERPO WHERE NUMERO=" + numero + " AND NUMEROITEM=" + item;
+		Cursor cur = db.rawQuery(Sql, null);
+		if (cur.moveToNext()){
+			ItemPedido items = new ItemPedido();
+			items.setNumero(cur.getLong(cur.getColumnIndex("NUMERO")));
+			items.setCodigo(cur.getString(cur.getColumnIndex("CODIGOARTICULO")));
+			items.setCantidad(cur.getDouble(cur.getColumnIndex("CANTIDAD")));
+			items.setDescuento((cur.getDouble(cur.getColumnIndex("DESCUENTO"))));
+			items.setPrecio(cur.getDouble(cur.getColumnIndex("PRECIO")));
+			items.setItem(cur.getInt(cur.getColumnIndex("NUMEROITEM")));
+			items.setEstado(cur.getInt(cur.getColumnIndex("ESTADO")));
+			return items;
+		} else {
+			return null;
+		}
+	}
+}

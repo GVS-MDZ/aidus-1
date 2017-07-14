@@ -1,0 +1,67 @@
+package com.gvs.conectoras;
+
+import java.io.DataInputStream;
+import java.util.Date;
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.SQLException;
+import android.database.sqlite.SQLiteDatabase;
+import com.gvs.entidades.CierresDeDia;
+import com.gvs.entidades.Configuracion;
+import com.gvs.exceptiones.ConectorException;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.DetectorDeConexion;
+import com.gvs.utilidades.Funciones;
+
+
+public class ConectorFinDeDia extends ConectorGeneral{
+	
+	private int lEmpresa;
+	private Context conte;
+	private CierresDeDia cierreDia;
+	private Funciones funcion = new Funciones();
+	
+	public ConectorFinDeDia(Configuracion conf, Context cont, int empresa, CierresDeDia cierre){
+		super(conf);
+		conte=cont;
+		lEmpresa=empresa;
+		cierreDia=cierre;
+	}
+
+	@Override
+	protected String CompletarURL() throws ConectorException {
+		// TODO Auto-generated method stub
+		String strUrl = "altaFinDeDia?empresa=" + lEmpresa + "&vendedor=" + cierreDia.getCodigoVendedor() +
+				"&fecha=" + cierreDia.getFecha() + "&deldia=" + cierreDia.getClientesDelDia() + 
+				"&atendidos=" + cierreDia.getClientesAtendidos() + "&noatendidos=" + cierreDia.getClientesNoAtendidos() +
+				"&pedidos=" + cierreDia.getPedidosSinEnviar() + "&motivos=0&general=" + cierreDia.getCobGeneral() +
+				"&efectiva=" + cierreDia.getCobEfectiva() + "&estado=" + cierreDia.getEstado();
+		return strUrl;
+	}
+
+	@Override
+	protected void procesarRespuesta(DataInputStream in)
+			throws ConectorException {
+		// TODO Auto-generated method stub
+		try {
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			String Sql = "SELECT * FROM FINESDEDIA WHERE CODIGOVENDEDOR=" + cierreDia.getCodigoVendedor() + " AND FECHA=" + cierreDia.getFecha();
+			Cursor cur = db.rawQuery(Sql, null);
+			ContentValues cont = new ContentValues();
+			if (cur.moveToNext()) {
+				cont.put("ESTADO", 1);
+				cont.put("FECHAENVIADO", new Date().getTime());
+				cont.put("INTERNET", new DetectorDeConexion(conte).estadoRedes());
+				db.update("FINESDEDIA", cont, "CODIGOVENDEDOR=" + cierreDia.getCodigoVendedor() + " AND FECHA=" + cierreDia.getFecha(),null);
+			} 
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new ConectorException(e.getMessage());
+		}
+		
+	}
+	}
+	

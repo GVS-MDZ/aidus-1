@@ -1,0 +1,175 @@
+package com.gvs.idusapp;
+
+import java.util.Collection;
+import java.util.List;
+
+import com.gvs.conectoras.ConectorActualizacion;
+import com.gvs.conectoras.ConectorCliente;
+import com.gvs.conectoras.ConectorCobranza;
+import com.gvs.conectoras.ConectorControlDeuda;
+import com.gvs.conectoras.ConectorFinDeDia;
+import com.gvs.conectoras.ConectorGeneral;
+import com.gvs.conectoras.ConectorNoAtendido;
+import com.gvs.conectoras.ConectorRespuestaEncuesta;
+import com.gvs.conectoras.ConectorSincronizador;
+import com.gvs.controladores.ControladorCierreDeDia;
+import com.gvs.controladores.ControladorCliente;
+import com.gvs.controladores.ControladorCobranza;
+import com.gvs.controladores.ControladorEncuesta;
+import com.gvs.controladores.ControladorNoAtendido;
+import com.gvs.controladores.ControladorSincronizador;
+//import com.gvs.controladores.ControladorVendedor;
+import com.gvs.entidades.CierresDeDia;
+import com.gvs.entidades.Configuracion;
+import com.gvs.entidades.NoAtendido;
+import com.gvs.entidades.RespuestaEncuestas;
+import com.gvs.entidades.Sincronizador;
+import com.gvs.utilidades.Client;
+import com.gvs.utilidades.DetectorDeConexion;
+import com.gvs.utilidades.Funciones;
+import com.gvs.utilidades.Gain;
+
+import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.Intent;
+import android.os.Bundle;
+import android.os.Handler;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+
+public class SyncActivity extends Activity {
+	private Button btnSync;
+	private int empresa;
+	private int vendedor;
+	private ProgressDialog syncPrgDialog=null;
+	private Funciones funcion = new Funciones();
+	private ConectorGeneral conectorActualizacion;
+	private Configuracion configuracion ;
+	private Bundle bun ;
+    //private ControladorVendedor controladorVendedor;
+	private Handler handler;
+	
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_sync);
+		btnSync = (Button) findViewById(R.id.btn_actualizar);	
+		bun = getIntent().getExtras();
+		empresa = bun.getInt("EMPRESA");
+		vendedor = bun.getInt("VENDEDOR");
+		//controladorVendedor=new ControladorVendedor(this);
+	   //String nombre=controladorVendedor.buscarVendedor(empresa, vendedor);
+		 handler = new Handler();
+		 
+		btnSync.setOnClickListener(new OnClickListener() {
+
+			@Override
+			public void onClick(View v) {
+				try{
+			    configuracion = funcion.devolverConfiguracion(SyncActivity.this);
+				DetectorDeConexion internet = new DetectorDeConexion(SyncActivity.this);
+				bun.putInt("EMPRESA", empresa);
+				bun.putInt("VENDEDOR", vendedor);
+				if (internet.conexionInternet()){
+				    conectorActualizacion = new ConectorActualizacion(configuracion, empresa, vendedor, SyncActivity.this);
+					syncPrgDialog = ProgressDialog.show(SyncActivity.this, "Sincronizando", "Este proceso puede demorar varios minutos...... ");				
+					Thread thread = new Thread() {
+					public void run(){
+							try {
+								if (conectorActualizacion.correr(SyncActivity.this)) {
+									
+									ControladorNoAtendido controladorNoAtendido = new ControladorNoAtendido(SyncActivity.this);
+									controladorNoAtendido.marcarParaEnviar();
+									Collection<NoAtendido> noAtendidos = controladorNoAtendido.buscarNoAtendidosParaEnviar();
+									for (NoAtendido noAtendido: noAtendidos) {
+										ConectorGeneral conectorNoAtendido = new ConectorNoAtendido(configuracion, SyncActivity.this, empresa, noAtendido);
+										conectorNoAtendido.correr(SyncActivity.this);
+									}
+									
+									ControladorCierreDeDia controladorCierreDia = new ControladorCierreDeDia(SyncActivity.this);
+									controladorCierreDia.marcarParaEnviar();
+									Collection<CierresDeDia> cierres = controladorCierreDia.buscarNoAtendidosParaEnviar();
+									for (CierresDeDia cierre: cierres){
+										ConectorGeneral conectorCierre = new ConectorFinDeDia(configuracion, SyncActivity.this, empresa, cierre);
+										conectorCierre.correr(SyncActivity.this);
+									}
+									
+									ControladorSincronizador trbSyncro = new ControladorSincronizador(SyncActivity.this);
+									trbSyncro.marcarParaEnviar();
+									Collection<Sincronizador> syncros = trbSyncro.buscarSincronizacionesParaEnviar();
+									for (Sincronizador syncro : syncros){
+										ConectorGeneral conectorSyncro = new ConectorSincronizador(configuracion, SyncActivity.this, empresa, syncro);
+										conectorSyncro.correr(SyncActivity.this);
+									}
+									
+									ControladorEncuesta controladorEncuesta = new ControladorEncuesta(SyncActivity.this);
+									controladorEncuesta.marcarParaEnviar();
+									Collection<RespuestaEncuestas> respuestas = controladorEncuesta.buscarRespuestasParaEnviar();
+									for (RespuestaEncuestas resp : respuestas) {
+										ConectorGeneral conectorRespuestaEncuesta = new ConectorRespuestaEncuesta(configuracion, SyncActivity.this, empresa, vendedor, resp);
+										conectorRespuestaEncuesta.correr(SyncActivity.this);
+									}
+									
+									ControladorCobranza controladorCobranza = new ControladorCobranza(SyncActivity.this);
+									List<Gain> list_gain = controladorCobranza.buscarCobranzas();
+									for (Gain gain : list_gain) {
+										ConectorGeneral conectorCobranza = new ConectorCobranza(configuracion, SyncActivity.this, empresa, gain);
+										conectorCobranza.correr(SyncActivity.this);
+									}
+									
+							 	    ControladorCliente controladorCliente=new ControladorCliente(SyncActivity.this);
+									List<Client> list_client=controladorCliente.buscarClientesActualizados();
+									for(Client client:list_client){
+										ConectorGeneral conectorCliente=new ConectorCliente(configuracion,SyncActivity.this,empresa,client.getCodigo(),client.getLatitud(),client.getLongitud());
+										conectorCliente.correr(SyncActivity.this);
+									}
+
+									ConectorGeneral conectorControl=new ConectorControlDeuda(configuracion, empresa, SyncActivity.this);
+									conectorControl.correr(SyncActivity.this);
+									
+								} else {
+									handler.post(new Runnable() {
+										@Override
+										public void run() {	
+											syncPrgDialog.dismiss();
+											funcion.MostrarMensajeAceptar(SyncActivity.this, "Error de Sincronizacion", "Pongase en contacto con el servicio técnico");
+										}
+									});
+								}
+								
+								if (bun.getString("SINCRONIZACION").equals("GENERAL")) {
+									syncPrgDialog.dismiss();
+									finish();
+								} else {
+									Intent intent = new Intent(SyncActivity.this,WorkDayActivity.class);
+									intent.putExtras(bun);
+									startActivity(intent);
+									finish();
+								}
+							} catch (Exception e) {
+								handler.post(new Runnable() {
+									@Override
+									public void run() {	
+										syncPrgDialog.dismiss();
+										funcion.MostrarMensajeAceptar(SyncActivity.this, "Error de Sincronizacion", "Pongase en contacto con el servicio técnico" );
+									}
+								});
+							}
+						}
+					};
+					thread.start();
+				} else {
+					funcion.MostrarMensajeAceptar(SyncActivity.this, "Sin Internet", "Usted no puede sincronizar sino está conectado a internet");
+				}
+				}catch(Exception ex){
+					syncPrgDialog.dismiss();
+					funcion.MostrarMensajeAceptar(SyncActivity.this, "Error de Sincronizacion", "Pongase en contacto con el servicio técnico" );
+				}
+			}
+		});
+	}
+
+
+}

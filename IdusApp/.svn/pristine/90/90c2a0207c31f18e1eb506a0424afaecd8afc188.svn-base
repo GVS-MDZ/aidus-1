@@ -1,0 +1,109 @@
+package com.gvs.idusapp;
+
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.gvs.controladores.ControladorUsuario;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+import android.app.Activity;
+import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.location.Location;
+import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
+
+public class ClientMapActivity extends Activity {
+	private GoogleMap mMap;
+	private Funciones funcion;
+	private Bundle bun;
+	private int dia;
+	private int vendedor;
+	private ControladorUsuario controladorUsuario;
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_client_map);
+		funcion=new Funciones();
+		bun = getIntent().getExtras();
+		controladorUsuario = new ControladorUsuario();
+		dia = bun.getInt("DIA");
+		if(dia!=0){
+		vendedor = bun.getInt("VENDEDOR");
+		String Sql = "SELECT * FROM CLIENTES AS C INNER JOIN VISITAS AS V " +
+				"ON C.CODIGO=V.CODIGOCLIENTE " +
+				"WHERE SUBSTR(V.DIAS," + dia + ",1)='" + dia+"' AND C.CODIGOVENDEDOR=" + vendedor + " AND HAB=1 AND LATITUD !=0 AND LONGITUD!=0 ";
+		BaseDeDatos baseDeDatos = new BaseDeDatos(ClientMapActivity.this,funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		Cursor cur = db.rawQuery(Sql, null);
+		if (cur.getCount() > 0) {
+			while (cur.moveToNext()) {
+				double lat = cur.getDouble(cur.getColumnIndex("LATITUD"));
+				double lng =cur.getDouble(cur.getColumnIndex("LONGITUD"));
+				String nombre=cur.getString(cur.getColumnIndex("NOMBRE"));
+				String direccion=cur.getString(cur.getColumnIndex("DOMICILIO"));
+				Location location = new Location("");
+				location.setLatitude(lat);
+				location.setLongitude(lng);		  
+				LatLng newLatLng = new LatLng(location.getLatitude(), location.getLongitude());
+				mMap = ((MapFragment)getFragmentManager().findFragmentById(R.id.map)).getMap();
+				mMap.addMarker(new MarkerOptions().position(newLatLng).title(nombre+"("+direccion+")"));	
+			    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 14.0f));
+			}
+		} 
+		}else{
+			vendedor = bun.getInt("VENDEDOR");
+			String Sql = "SELECT * FROM CLIENTES WHERE CODIGOVENDEDOR=" + vendedor + " AND HAB=1 AND LATITUD !=0 AND LONGITUD!=0 ";
+			BaseDeDatos baseDeDatos = new BaseDeDatos(ClientMapActivity.this,funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			Cursor cur = db.rawQuery(Sql, null);
+			if (cur.getCount() > 0) {
+				while (cur.moveToNext()) {
+					double lat = cur.getDouble(cur.getColumnIndex("LATITUD"));
+					double lng =cur.getDouble(cur.getColumnIndex("LONGITUD"));
+					String nombre=cur.getString(cur.getColumnIndex("NOMBRE"));
+					String direccion=cur.getString(cur.getColumnIndex("DOMICILIO"));
+					Location location = new Location("");
+					location.setLatitude(lat);
+					location.setLongitude(lng);		  
+					LatLng newLatLng = new LatLng(location.getLatitude(), location.getLongitude());
+					mMap = ((MapFragment)getFragmentManager().findFragmentById(R.id.map)).getMap();
+					mMap.addMarker(new MarkerOptions().position(newLatLng).title(nombre+"("+direccion+")"));	
+				   mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 14.0f));
+				}
+			} 
+			
+		}
+		
+	}
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.client_map, menu);
+		return true;
+	}
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		int id = item.getItemId();
+		if(id == R.id.cerrar_sesion){
+			startActivity(new Intent(getBaseContext(), MainActivity.class)
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
+			controladorUsuario.cerrarSesion(this);
+			finish();
+		}else if(id == R.id.sincronizar){
+			Intent i = new Intent(this, SyncActivity.class);
+			bun.putString("SINCRONIZACION","GENERAL");
+			i.putExtras(bun);
+			startActivity(i);
+		}
+		return super.onOptionsItemSelected(item);
+	}
+
+
+
+}

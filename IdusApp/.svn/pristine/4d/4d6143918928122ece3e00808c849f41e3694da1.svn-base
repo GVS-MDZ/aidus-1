@@ -1,0 +1,268 @@
+package com.gvs.idusapp;
+
+import java.util.Date;
+import java.util.List;
+
+import com.gvs.busquedas.BusquedaComprobantes;
+import com.gvs.conectoras.ConectorCobranza;
+import com.gvs.conectoras.ConectorGeneral;
+import com.gvs.controladores.ControladorUsuario;
+import com.gvs.entidades.Configuracion;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+import com.gvs.utilidades.Gain;
+import com.gvs.utilidades.Voucher;
+
+import android.app.Activity;
+import android.app.Dialog;
+import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Color;
+import android.os.Bundle;
+import android.os.Handler;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.View.OnClickListener;
+import android.view.Window;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
+
+public class VoucherClientActivity extends Activity {
+	private Bundle bun;
+	private ListView list;
+	private TextView lbl_cliente,lbl_total,lbl_comprobante;
+	private Funciones funcion=new Funciones();
+	private Dialog dialog_cobranza;
+	private ControladorUsuario controladorUsuario;
+	private List<Voucher> lista;
+	private int empresa;
+	private int codigoCliente;
+	private int codigoVendedor;
+	private BusquedaComprobantes busqueda;
+	private TextView txt_importe,txt_saldo,txt_recibo,lbl_mensaje;
+	private Voucher voucher ;
+	private Configuracion configuracion;
+	private ConectorGeneral conectorVoucher;
+	private Handler handler;
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		 setContentView(R.layout.activity_voucher_client);
+		 bun = getIntent().getExtras();
+	     controladorUsuario = new ControladorUsuario();
+	     busqueda = new BusquedaComprobantes(VoucherClientActivity.this);
+		 list=(ListView)findViewById(R.id.lista_comprobantes);
+		 lbl_cliente=(TextView)findViewById(R.id.lbl_cliente);
+		 lbl_total=(TextView)findViewById(R.id.lbl_total_cliente);
+		 handler = new Handler();
+		 codigoVendedor=bun.getInt("VENDEDOR");
+		 String[] cliente=bun.getString("DATO01").split("-");
+		 codigoCliente = bun.getInt("CODIGOCLIENTE");
+		 empresa= bun.getInt("EMPRESA");
+		 lbl_cliente.setText(cliente[1]);  
+	     buscarComprobantes();
+	     mostrarLista();
+	     realizarOperacion();
+		 lbl_total.setText("$ "+funcion.formatDecimal((busqueda.getTotal()),2));
+	}
+	
+	@Override
+	protected void onRestart() {
+		buscarComprobantes();
+		mostrarLista();
+		super.onRestart();
+	}
+	
+	public void buscarComprobantes(){
+		 lista=busqueda.buscarComprobantesPorClientes(codigoCliente);
+	}
+	
+	private void mostrarLista() {
+		if(lista!=null){
+		ArrayAdapter<Voucher> adapter = new MyListAdapter();
+		list = (ListView) findViewById(R.id.lista_comprobantes);
+		list.setAdapter(adapter);
+		}
+	}
+	
+	private void realizarOperacion() {
+		list = (ListView) findViewById(R.id.lista_comprobantes);
+		list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view,int position, long id) {
+				 voucher = lista.get(position);
+				 if(voucher.getClase().equals("AC") || voucher.getClase().equals("RC")){
+					 funcion.MostrarMensajeAceptar(VoucherClientActivity.this, "Cobranza", "No se puede realizar la cobranza");					
+				 }else{
+				 dialog_cobranza=new Dialog(VoucherClientActivity.this);
+				 dialog_cobranza.setCancelable(false);
+				 dialog_cobranza.requestWindowFeature(Window.FEATURE_NO_TITLE);
+				 dialog_cobranza.setContentView(R.layout.dialogo_cobranza);
+				 lbl_comprobante=(TextView)dialog_cobranza.findViewById(R.id.lbl_comprobante_cobranza);
+				 txt_recibo=(TextView)dialog_cobranza.findViewById(R.id.txt_recibo);
+				 txt_importe=(TextView)dialog_cobranza.findViewById(R.id.txt_importe);
+				 txt_saldo=(TextView)dialog_cobranza.findViewById(R.id.txt_saldo);
+				 lbl_mensaje=(TextView)dialog_cobranza.findViewById(R.id.lbl_mensaje);
+				 lbl_comprobante.setText(voucher.getComprobante());			
+				 txt_recibo.setText("");
+				 txt_importe.setText("");
+				 lbl_mensaje.setText("");
+				 txt_saldo.setText("$ "+voucher.getSaldo());
+				 txt_saldo.setTextColor(Color.RED);
+				 Button btn_editar_aceptar = (Button) dialog_cobranza.findViewById(R.id.btn_aceptar_editar);
+				 
+				 btn_editar_aceptar.setOnClickListener(new OnClickListener() {
+						@Override
+						public void onClick(View v) {
+							if(txt_recibo.getText().toString().trim().equals("")){
+								lbl_mensaje.setText("Ingrese el n° de recibo");
+								txt_recibo.requestFocus();
+							}else{
+								if(txt_importe.getText().toString().trim().equals("")){
+									lbl_mensaje.setText("Ingrese un importe");
+									txt_importe.requestFocus();
+						        }else{
+						         if(Double.parseDouble(txt_importe.getText().toString())> Double.parseDouble(voucher.getSaldo())){
+						        	 lbl_mensaje.setText("El importe no debe ser meyor que el saldo");
+						             txt_importe.requestFocus();
+						         }else{
+						        	 lbl_mensaje.setText("Guardando la cobranza....");
+						        	 BaseDeDatos baseDeDatos = new BaseDeDatos(VoucherClientActivity.this, funcion.BaseDeDatos(), null,funcion.Version());
+						     		 SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+						     		 double saldo=Double.parseDouble(voucher.getSaldo())-Double.parseDouble(txt_importe.getText().toString());
+						     		 String sql = "UPDATE COMPROBANTESVENTAS SET ESTADO=1,SALDO="+saldo+" WHERE CLASE='" +voucher.getClase() + "' AND TIPO='"+ voucher.getTipo() +"' AND SUCURSAL="+ voucher.getSucursal() +" AND NUMERO="+ voucher.getNumero() +"";
+						     		 db.execSQL(sql);
+						     		 Gain gain=new Gain();
+						     		 gain.setClase(voucher.getClase());
+						     		 gain.setTipo(voucher.getTipo());
+						     		 gain.setSucursal(voucher.getSucursal());
+						     		 gain.setNumero_comprobante(voucher.getNumero());
+						     		 gain.setNumero_recibo(Integer.parseInt(txt_recibo.getText().toString()));
+						     		 gain.setImporte_pagado(Double.parseDouble(txt_importe.getText().toString()));
+						     		 gain.setSaldo(Double.parseDouble(voucher.getSaldo()));
+						     		 gain.setFecha(new Date().getTime());
+						     		 gain.setEstado(0);
+						     		 gain.setCodigo_cliente(codigoCliente);
+						     		 gain.setCodigo_vendedor(codigoVendedor);
+						     		 String sqlInsert="INSERT INTO COBRANZA (CLASE,TIPO,SUCURSAL,NUMERO,FECHA,CODIGOCLIENTE,CODIGOVENDEDOR,RECIBO,SALDO,IMPORTEPAGADO,ESTADO) " +
+						     		 " VALUES('"+gain.getClase()+"','"+gain.getTipo()+"',"+gain.getSucursal()+","+gain.getNumero_comprobante()+","+gain.getFecha()+"," +
+						     		 ""+gain.getCodigo_cliente()+","+gain.getCodigo_vendedor()+","+gain.getNumero_recibo()+","+gain.getSaldo()+"," +
+						     		 ""+gain.getImporte_pagado()+","+gain.getEstado()+")";
+						     		 db.execSQL(sqlInsert);
+						     		configuracion = funcion.devolverConfiguracion(VoucherClientActivity.this);
+									conectorVoucher = new ConectorCobranza(configuracion,VoucherClientActivity.this,empresa,gain);
+									Thread thread = new Thread() {
+										public void run() {
+											try {
+											conectorVoucher.correr(VoucherClientActivity.this);	
+											handler.post(new Runnable() {
+												@Override
+												public void run() {	
+													buscarComprobantes();
+										     		mostrarLista();
+										     		lbl_total.setText("$ "+funcion.formatDecimal((busqueda.getTotal()),2));
+										        	dialog_cobranza.dismiss();
+										        	Toast toast =Toast.makeText(getApplicationContext(),"Cobranza realizada correctamente", Toast.LENGTH_SHORT);
+												    toast.show();
+												}
+											});
+											} catch (Exception e) {
+												handler.post(new Runnable() {
+													@Override
+													public void run() {	
+														buscarComprobantes();
+											     		mostrarLista();
+											     		lbl_total.setText("$ "+funcion.formatDecimal((busqueda.getTotal()),2));
+														dialog_cobranza.dismiss();
+														Toast toast = Toast.makeText(getApplicationContext(),"Error al enviar la cobranza",Toast.LENGTH_SHORT);
+														toast.show();
+													}
+												});
+																				
+											}
+										}
+									};
+									thread.start();
+						         }
+						        }
+							}					
+						}
+					});
+							
+				 Button btn_editar_cancelar = (Button) dialog_cobranza.findViewById(R.id.btn_cancelar_editar);
+				 btn_editar_cancelar.setOnClickListener(new OnClickListener() {
+						@Override
+						public void onClick(View v) {
+							dialog_cobranza.dismiss();
+						}
+					});
+				dialog_cobranza.show();				
+			}
+		}
+		});
+	}
+	
+	private class MyListAdapter extends ArrayAdapter<Voucher> {
+
+		public MyListAdapter() {
+			super(VoucherClientActivity.this, R.layout.activity_voucher_client, lista);
+		}
+
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) {
+			View view = convertView;
+			if (view == null) {
+				view = getLayoutInflater().inflate(R.layout.row_voucher, parent,false);
+			}
+			Voucher voucher = lista.get(position);
+			ImageView image_operation = (ImageView) view.findViewById(R.id.img_estado_voucher);
+			image_operation.setImageResource(voucher.getIcon());
+
+			TextView lbl_comprobante = (TextView) view.findViewById(R.id.lbl_comprobante);
+			lbl_comprobante.setText(voucher.getComprobante());
+
+			TextView lbl_fecha = (TextView) view.findViewById(R.id.lbl_fecha_comprobante);
+			lbl_fecha.setText(voucher.getFecha());
+			
+			TextView lbl_saldo = (TextView) view.findViewById(R.id.lbl_saldo);
+			lbl_saldo.setText(voucher.getSaldo());
+
+			return view;
+		}
+
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.voucher_client, menu);
+		return true;
+	}
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		int id = item.getItemId();
+		if(id == R.id.cerrar_sesion){
+			startActivity(new Intent(getBaseContext(), MainActivity.class)
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
+			controladorUsuario.cerrarSesion(this);
+			finish();
+		}else if(id == R.id.sincronizar){
+			Intent i = new Intent(this, SyncActivity.class);
+			bun.putString("SINCRONIZACION","GENERAL");
+			i.putExtras(bun);
+			startActivity(i);
+		}
+		return super.onOptionsItemSelected(item);
+	}
+
+
+	
+}

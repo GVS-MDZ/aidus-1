@@ -1,0 +1,146 @@
+package com.gvs.busquedas;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+
+import com.gvs.entidades.Usuario;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+
+public class BusquedaUsuario {
+	private Context conte;
+	private Funciones funciones=new Funciones();
+	
+	public BusquedaUsuario(Context cont) {
+		conte=cont;
+	}
+	
+	public BusquedaUsuario() {
+	}
+
+	public Usuario validarUsuario(Context cont, String usu, String pass) {
+		BaseDeDatos baseDeDatos = new BaseDeDatos(cont, funciones.BaseDeDatos(), null,funciones.Version());
+		final SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+
+		String sql = "SELECT * FROM USUARIO WHERE NOMBRE='" + usu + "' AND PASS='" + pass + "'";
+		Cursor cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			Usuario usua = new Usuario();
+			usua.setCodigo(cur.getInt(cur.getColumnIndex("CODIGOVENDEDOR")));
+			usua.setEmpresa(cur.getInt(cur.getColumnIndex("CODIGOEMPRESA")));
+			usua.setTipo("vendedor");
+			usua.setSesion(cur.getInt(cur.getColumnIndex("SESION")));
+			return usua;
+		} else {
+			return null;
+		}
+	}
+	
+	public Usuario validarUsuarioAdministrador(Context cont, String usu, String pass) {
+		BaseDeDatos baseDeDatos = new BaseDeDatos(cont, funciones.BaseDeDatos(), null,funciones.Version());
+		final SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+
+		String sql = "SELECT * FROM USUARIO WHERE NOMBRE='" + usu + "' AND PASS='" + pass + "' AND CODIGO=1 ";
+		Cursor cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			Usuario usua = new Usuario();
+			usua.setCodigo(cur.getInt(cur.getColumnIndex("CODIGOVENDEDOR")));
+			usua.setEmpresa(cur.getInt(cur.getColumnIndex("CODIGOEMPRESA")));
+			usua.setSesion(cur.getInt(cur.getColumnIndex("SESION")));
+			return usua;
+		} else {
+			return null;
+		}
+	}
+	
+	public void iniciarSesion(Context cont, String usu, String pass){
+		BaseDeDatos baseDeDatos = new BaseDeDatos(cont, funciones.BaseDeDatos(), null,funciones.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		String sql = "UPDATE USUARIO SET SESION=1 WHERE NOMBRE='" + usu + "' AND PASS='"+ pass +"'";
+		db.execSQL(sql);
+	}
+	
+	public Usuario buscarUsuarioLogueado(Context cont){
+		BaseDeDatos baseDeDatos = new BaseDeDatos(cont, funciones.BaseDeDatos(), null,funciones.Version());
+		final SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+
+		String sql = "SELECT * FROM USUARIO WHERE SESION="+1+"";
+		Cursor cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			Usuario usua = new Usuario();
+			usua.setCodigo(cur.getInt(cur.getColumnIndex("CODIGOVENDEDOR")));
+			usua.setEmpresa(cur.getInt(cur.getColumnIndex("CODIGOEMPRESA")));
+			usua.setTipo("vendedor");
+			usua.setSesion(cur.getInt(cur.getColumnIndex("SESION")));
+			return usua;
+		} else {
+			return null;
+		}
+	}
+
+	public void cerrarSesion(Context cont){
+		/*BaseDeDatos baseDeDatos = new BaseDeDatos(cont, funciones.BaseDeDatos(), null,funciones.Version());
+		final SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		String sql2 = "SELECT * FROM USUARIO WHERE SESION=1";
+		Cursor cur = db.rawQuery(sql2, null);
+		if (cur.moveToNext()) {
+			Usuario usua = new Usuario();
+			usua.setCodigo(cur.getInt(cur.getColumnIndex("CODIGOVENDEDOR")));
+			usua.setEmpresa(cur.getInt(cur.getColumnIndex("CODIGOEMPRESA")));
+			usua.setTipo("vendedor");
+			usua.setSesion(cur.getInt(cur.getColumnIndex("SESION")));
+			String sql3 = "DELETE FROM SYNCRO WHERE CODIGOEMPRESA="+usua.getEmpresa()+" AND CODIGOVENDEDOR="+usua.getCodigo()+" AND MODO='T'";
+			db.execSQL(sql3);
+		}*/ 
+		
+	}
+
+	public void guardarUsuario(){
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funciones.BaseDeDatos(), null, funciones.Version());
+		final SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		try{				
+			String sql = "SELECT NOMBRE,PASS FROM USUARIO WHERE CODIGO=1";
+			Cursor usuCur = db.rawQuery(sql, null);
+			db.beginTransaction();
+			if (usuCur.moveToNext()){
+				ContentValues cont = new ContentValues();
+				String pass=funciones.getPassAdministrator();
+				cont.put("PASS",pass);
+				db.update("USUARIO", cont, "CODIGO=1",null);				
+			} else {
+				ContentValues cont = new ContentValues();
+				cont.put("CODIGO", 1);
+				cont.put("NOMBRE", "administrator");
+				cont.put("PASS",funciones.getPassAdministrator());
+				db.insert("USUARIO", null,cont);
+			}
+			db.setTransactionSuccessful();
+			} finally {
+				db.endTransaction();
+			}
+	 }
+
+	public void modificarUsuarioConector(Usuario usu ){
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte,funciones.BaseDeDatos(), null, funciones.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		ContentValues cont = new ContentValues();
+		String sql = "SELECT * FROM USUARIO WHERE CODIGO='" + usu.getId()+ "'";
+		Cursor cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			cont.put("NOMBRE", usu.getNombre());
+			cont.put("PASS", usu.getContrasena());
+			cont.put("CODIGOEMPRESA", usu.getEmpresa());
+			cont.put("CODIGOVENDEDOR", usu.getCodigo());
+			db.update("USUARIO", cont, "CODIGO=" + usu.getId() + "", null);
+		} else {
+			cont.put("CODIGO", usu.getId());
+			cont.put("NOMBRE", usu.getNombre());
+			cont.put("PASS", usu.getContrasena());
+			cont.put("CODIGOEMPRESA", usu.getEmpresa());
+			cont.put("CODIGOVENDEDOR", usu.getCodigo());
+			db.insert("USUARIO", null, cont);
+		}
+	}
+}

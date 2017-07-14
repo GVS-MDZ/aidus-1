@@ -1,0 +1,13 @@
+package com.gvs.exceptiones;
+
+public class ExceptionCierreDeDia extends Exception {
+	private static final long serialVersionUID = 1L;
+
+	public ExceptionCierreDeDia() {
+
+	}
+
+	public ExceptionCierreDeDia(String msg) {
+		super(msg);
+	}
+}

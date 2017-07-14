@@ -1,0 +1,253 @@
+package com.gvs.utilidades;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Formatter;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import android.annotation.SuppressLint;
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.Build;
+
+@SuppressLint("SimpleDateFormat")
+public class Funciones {
+	
+	private Formatter formato;
+	private SimpleDateFormat df;
+	private Context cont;
+	
+	public Funciones(){}
+	
+	public Funciones(Context cont){
+		this.cont=cont;
+	}
+	
+	public void MostrarMensajeAceptar(Context cont, String tittle, String message) {
+		AlertDialog.Builder mensaje = new AlertDialog.Builder(cont);
+		mensaje.setTitle(tittle);
+		mensaje.setMessage(message);
+		mensaje.setPositiveButton("Aceptar", new OnClickListener() {
+
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				return;
+			}
+		});
+		mensaje.show();
+	}
+
+	public String BaseDeDatos() {
+		return "aidus.db";
+	}
+
+	public int Version() {
+		return 2;
+	}
+	
+	public String getVersionAplicacion(){
+		return "Version 6.0.9";
+	}
+
+	public String dateToString_ddmmyyyy_hhmm(long date) {
+		Calendar c = Calendar.getInstance();
+		c.setTime(new Date(date));
+		int y = c.get(Calendar.YEAR);
+		int m = c.get(Calendar.MONTH) + 1;
+		int d = c.get(Calendar.DATE);
+		int h = c.get(Calendar.HOUR_OF_DAY);
+		int n = c.get(Calendar.MINUTE);
+		String t = (d < 10 ? "0" : "") + d + "/" + (m < 10 ? "0" : "") + m
+				+ "/" + (y < 10 ? "0" : "") + y + " " + (h < 10 ? "0" : "") + h
+				+ ":" + (n < 10 ? "0" : "") + n;
+		return t;
+	}
+
+	public String dateToString_ddmmyyyy(long date) {
+		Calendar c = Calendar.getInstance();
+		c.setTime(new Date(date));
+		int y = c.get(Calendar.YEAR);
+		int m = c.get(Calendar.MONTH) + 1;
+		int d = c.get(Calendar.DATE);
+		String t = (d < 10 ? "0" : "") + d + "/" + (m < 10 ? "0" : "") + m
+				+ "/" + (y < 10 ? "0" : "") + y;
+		return t;
+	}
+
+	public String dateToString_dd_mm_yyyy(long date) {
+		Calendar c = Calendar.getInstance();
+		c.setTime(new Date(date));
+		int y = c.get(Calendar.YEAR);
+		int m = c.get(Calendar.MONTH) + 1;
+		int d = c.get(Calendar.DATE);
+		String t = (d < 10 ? "0" : "") + d + "-" + (m < 10 ? "0" : "") + m
+				+ "-" + (y < 10 ? "0" : "") + y;
+		return t;
+	}
+
+	public String dateToString_yyyymmdd(long date) {
+		Calendar c = Calendar.getInstance();
+		c.setTime(new Date(date));
+		int y = c.get(Calendar.YEAR);
+		int m = c.get(Calendar.MONTH) + 1;
+		int d = c.get(Calendar.DATE);
+		String t = (y < 10 ? "0" : "") + y + "/" + (m < 10 ? "0" : "") + m
+				+ "/" + (d < 10 ? "0" : "") + d;
+		return t;
+	}
+
+	public String dateToString_yyyymmdd_hhmm(long date) {
+		Date fecha=new Date(date);
+		SimpleDateFormat format=new SimpleDateFormat("dd/MM/yyyy");
+		String fecha_string=format.format(fecha);
+		return fecha_string;
+	}
+	
+	public String dateToString_MMYYYY(long date) {
+		Calendar c = Calendar.getInstance();
+		c.setTime(new Date(date));
+		int y = c.get(Calendar.YEAR);
+		int m = c.get(Calendar.MONTH) + 1;
+		String t = (m < 10 ? "0" : "") + m + "/" + (y < 10 ? "0" : "") + y;
+		return t;
+	}
+
+	public Date stringToDate(String dateYYYYMMDD) throws ParseException {
+		 df = new SimpleDateFormat("yyyy/MM/dd");
+		Date d = df.parse(dateYYYYMMDD);
+		return d;
+	}
+
+	@SuppressLint("SimpleDateFormat")
+	public Date _stringToDate(String dateYYYYMMDD) throws ParseException {
+		 df = new SimpleDateFormat("dd-MM-yyyy");
+		Date d = df.parse(dateYYYYMMDD);
+		return d;
+	}
+
+	public int optenerNumeroDiaActual() {
+		Calendar calendario = Calendar.getInstance();
+		int diaSemana = calendario.get(7) - 1;
+		return diaSemana;
+	}
+
+	public String format(int numero, int cantidadDeCerosIzq) {
+		formato=new Formatter();
+		String cadena = String.valueOf(numero);
+		cadena =formato.format("%0" + cantidadDeCerosIzq + "d", numero).toString();
+		return cadena;
+	}
+
+	public String formatDecimal(double numero, int cantidadDecimales) {
+		formato=new Formatter();
+		String cadena = String.valueOf(numero);
+		cadena = formato.format("%." + cantidadDecimales + "f", numero).toString();
+		return cadena.replace(",", ".");
+	}
+	
+    public String autocompletarNumero(String numero,int length_text) {
+	    int amountNumber =numero.length();
+	    String j = "";
+	    for (int i = 0; i < length_text - amountNumber; i++) {
+	         j = j + "0";
+	    }
+	    numero = j + numero;
+	   return numero;
+	 }
+   
+   public String getPassAdministrator(){
+		Calendar cal = Calendar.getInstance();
+		int diasDelMes = cal.get(Calendar.DAY_OF_WEEK);
+		int hoy = cal.get(Calendar.DAY_OF_MONTH);		
+		return "gvs.px" + diasDelMes + hoy;
+	}
+   
+   public int devolverBoolean(boolean dato) {
+		if (dato) {
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+   
+   public boolean conexionInternet() {
+		ConnectivityManager connectivity = (ConnectivityManager) cont.getSystemService(Context.CONNECTIVITY_SERVICE);
+		if (connectivity != null) {
+			NetworkInfo[] info = connectivity.getAllNetworkInfo();
+			if (info != null)
+				for (int i = 0; i < info.length; i++)
+					if (info[i].getState() == NetworkInfo.State.CONNECTED) {
+						return true;
+					}
+
+		}
+		return false;
+	}
+
+	public String estadoRedes() {
+		ConnectivityManager connMgr = (ConnectivityManager) cont.getSystemService(Context.CONNECTIVITY_SERVICE);
+		final android.net.NetworkInfo wifi = connMgr.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+		final android.net.NetworkInfo mobile = connMgr.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
+		if (wifi.isAvailable()) {
+			return "WIFI";
+		} else if (mobile.isAvailable()) {
+			return "GPRS-UMTS 3G/4G";
+		} else {
+			return "SIN RED DE DATOS";
+		}
+	}
+	
+	public  String replace(String _text, String _searchStr, String _replacementStr) {
+	       StringBuffer sb = new StringBuffer();
+	       int searchStringPos = _text.indexOf(_searchStr);
+	       int startPos = 0;
+	       int searchStringLength = _searchStr.length();
+
+	       while (searchStringPos != -1) {
+	           sb.append(_text.substring(startPos, searchStringPos)).append(_replacementStr);
+	           startPos = searchStringPos + searchStringLength;
+	           searchStringPos = _text.indexOf(_searchStr, startPos);
+	       }
+
+	       sb.append(_text.substring(startPos,_text.length()));
+
+	       return sb.toString();
+	   }
+	
+	public boolean validarEmail(String email) {
+        String patron = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
+                + "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
+        Pattern pattern = Pattern.compile(patron);
+        Matcher matcher = pattern.matcher(email);
+        return matcher.matches();
+   }
+	public String getDeviceName() {
+		  String manufacturer = Build.MANUFACTURER;
+		  String model = Build.MODEL;
+		  if (model.startsWith(manufacturer)) {
+		    return capitalize(model);
+		  } else {
+		    return capitalize(manufacturer) + " " + model;
+		  }
+	}
+
+
+	private String capitalize(String s) {
+		  if (s == null || s.length() == 0) {
+		    return "";
+		  }
+		  char first = s.charAt(0);
+		  if (Character.isUpperCase(first)) {
+		    return s;
+		  } else {
+		    return Character.toUpperCase(first) + s.substring(1);
+		  }
+	} 
+}

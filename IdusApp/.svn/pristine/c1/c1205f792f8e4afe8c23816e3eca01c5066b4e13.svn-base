@@ -1,0 +1,183 @@
+package com.gvs.idusapp;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesUtil;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.gvs.conectoras.ConectorCliente;
+import com.gvs.conectoras.ConectorGeneral;
+import com.gvs.controladores.ControladorUsuario;
+import com.gvs.entidades.Configuracion;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
+import android.location.Criteria;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.os.Bundle;
+import android.os.Handler;
+import android.support.v4.app.FragmentActivity;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
+
+public class GpsClientActivity extends FragmentActivity implements LocationListener {
+
+    GoogleMap googleMap;
+    private TextView lbl_gps;
+    private Button btn_guardar;
+    private int empresa;
+    private int codigoCliente;
+    private Bundle bun;
+    private String latitud = "";
+	private String longitud = "";
+	private Funciones funcion;
+	private ControladorUsuario controladorUsuario;
+	private Configuracion configuracion;
+	private ConectorGeneral conectorCliente;
+	private Handler handler;
+	
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (!isGooglePlayServicesAvailable()) {
+            finish();
+        }
+        setContentView(R.layout.activity_gps_client);
+        SupportMapFragment supportMapFragment =(SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
+        googleMap = supportMapFragment.getMap();
+        googleMap.setMyLocationEnabled(true);
+    	lbl_gps=(TextView)findViewById(R.id.txt_gps);
+        btn_guardar = (Button) findViewById(R.id.btn_guardar);
+    	funcion = new Funciones();
+	    bun = getIntent().getExtras();
+		handler = new Handler();
+		controladorUsuario = new ControladorUsuario();
+		empresa = bun.getInt("EMPRESA");
+		codigoCliente = bun.getInt("CODIGOCLIENTE");
+		String[] cliente=bun.getString("DATO01").split("-");
+		lbl_gps.setText(cliente[1]);
+        LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        Criteria criteria = new Criteria();
+        String bestProvider = locationManager.getBestProvider(criteria, true);
+        Location location = locationManager.getLastKnownLocation(bestProvider);
+        if (location != null) {
+            onLocationChanged(location);
+        }
+        locationManager.requestLocationUpdates(bestProvider, 20000, 0, this);
+        
+        
+        btn_guardar.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				try {		
+					if (latitud.equals("") || !longitud.equals("")) {
+						BaseDeDatos baseDeDatos = new BaseDeDatos(GpsClientActivity.this, funcion.BaseDeDatos(),null, funcion.Version());
+						SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+						String sql = "UPDATE CLIENTES SET LATITUD="+ Double.parseDouble(latitud.toString())+ ",LONGITUD="+ Double.parseDouble(longitud.toString())+ ",EDITADO=1 WHERE CODIGO=" + codigoCliente;
+						db.execSQL(sql);
+						configuracion = funcion.devolverConfiguracion(GpsClientActivity.this);
+						conectorCliente = new ConectorCliente(configuracion,GpsClientActivity.this, empresa, codigoCliente,Double.parseDouble(latitud.toString()), Double.parseDouble(longitud.toString()));						
+						Thread thread = new Thread() {
+							public void run() {
+								handler.post(new Runnable() {
+									@Override
+									public void run() {	
+										try {
+											conectorCliente.correr(GpsClientActivity.this);
+											Toast toast = Toast.makeText(getApplicationContext(),"Cliente localizado", Toast.LENGTH_SHORT);
+											toast.show();
+										} catch (Exception e) {
+											Toast toast = Toast.makeText(getApplicationContext(),"Intente nuevamente", Toast.LENGTH_SHORT);
+											toast.show();
+										} 			
+										}
+									});		
+							}
+						};
+						thread.start();
+					} else {
+						Toast toast = Toast.makeText(getApplicationContext(),"Intente nuevamente", Toast.LENGTH_SHORT);
+						toast.show();
+					}
+				} catch (Exception ex) {
+					Toast toast = Toast.makeText(getApplicationContext(),"Intente nuevamente", Toast.LENGTH_SHORT);
+					toast.show();
+				}
+			}
+		});
+        
+        
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        double latitude = location.getLatitude();
+        double longitude = location.getLongitude();
+        latitud=String.valueOf(latitude);
+        longitud=String.valueOf(latitude);
+        LatLng latLng = new LatLng(latitude, longitude);
+        googleMap.addMarker(new MarkerOptions().position(latLng));
+        googleMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+        googleMap.animateCamera(CameraUpdateFactory.zoomTo(15));
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+        // TODO Auto-generated method stub
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+        // TODO Auto-generated method stub
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+        // TODO Auto-generated method stub
+    }
+
+    private boolean isGooglePlayServicesAvailable() {
+        int status = GooglePlayServicesUtil.isGooglePlayServicesAvailable(this);
+        if (ConnectionResult.SUCCESS == status) {
+            return true;
+        } else {
+            GooglePlayServicesUtil.getErrorDialog(status, this, 0).show();
+            return false;
+        }
+    }
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.gps_client, menu);
+		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		int id = item.getItemId();
+		if (id == R.id.cerrar_sesion) {
+			startActivity(new Intent(getBaseContext(), MainActivity.class)
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
+			controladorUsuario.cerrarSesion(this);
+			finish();
+		}else if(id == R.id.sincronizar){
+			Intent i = new Intent(this, SyncActivity.class);
+			bun.putString("SINCRONIZACION","GENERAL");
+			i.putExtras(bun);
+			startActivity(i);
+		}
+		return super.onOptionsItemSelected(item);
+	}
+
+}

@@ -1,0 +1,59 @@
+package com.gvs.idusapp;
+
+
+import com.gvs.busquedas.BusquedaUsuario;
+import android.app.Activity;
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+
+public class MainActivity extends Activity {
+	private Button btn_ingresar;
+	private BusquedaUsuario controladorUsuario;
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_main);
+		btn_ingresar = (Button) findViewById(R.id.btn_ingresar);
+		controladorUsuario = new BusquedaUsuario(this);
+		controladorUsuario.guardarUsuario();
+	
+		btn_ingresar.setOnClickListener(new OnClickListener() {					
+			@Override
+			public void onClick(View v) {
+					Intent intent = new Intent(MainActivity.this, LoginActivity.class);	
+					startActivity(intent);
+			}
+		});
+	}
+	
+	@Override
+	protected void onRestart() {
+		super.onRestart();
+	}
+	
+    
+	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.main, menu);
+		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case R.id.version:
+			Intent i = new Intent(this, VersionActivity.class);
+			startActivity(i);
+			return true;
+		default:
+			return super.onOptionsItemSelected(item);
+		}
+	}
+}

@@ -1,0 +1,188 @@
+package com.gvs.idusapp;
+import com.gvs.controladores.ControladorUsuario;
+import com.gvs.entidades.Configuracion;
+import com.gvs.utilidades.Funciones;
+import android.app.Activity;
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+
+public class WorkDayActivity extends Activity {
+	String[] list = { "LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES","SABADO", "SIN DIA ASIGNADO" };
+	ListView listView;
+	private int vendedor;
+	private Funciones funcion = new Funciones();
+	private ControladorUsuario controladorUsuario;
+	private Bundle bun;
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_work_day);
+		bun = getIntent().getExtras();
+		controladorUsuario = new ControladorUsuario();
+		final Configuracion configuracion = funcion.devolverConfiguracion(WorkDayActivity.this);
+		vendedor = bun.getInt("VENDEDOR");
+		listView = (ListView) findViewById(R.id.lista_dias);
+		ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,R.layout.row_work_day, R.id.lbl_item_day, list);
+		listView.setAdapter(adapter);
+		listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view,int position, long id) {
+				//TextView txt_view=(TextView)view;
+				if(position==0){
+					bun.putInt("DIA", 1);
+					bun.putInt("VENDEDOR",vendedor);
+					boolean pasa=false;
+					if (configuracion.getOtroDia()==1){
+						pasa=true;
+					} else {
+						if (funcion.optenerNumeroDiaActual()==bun.getInt("DIA")){
+							pasa=true;
+						} 
+					}
+					if (pasa) {
+						Intent intent = new Intent(WorkDayActivity.this, TabGeneralActivity.class);
+						intent.putExtras(bun);
+						startActivity(intent);
+					}
+				}else if(position==1){
+					bun.putInt("DIA", 2);
+					bun.putInt("VENDEDOR",vendedor);
+					boolean pasa=false;
+					if (configuracion.getOtroDia()==1){
+						pasa=true;
+					} else {
+						if (funcion.optenerNumeroDiaActual()==bun.getInt("DIA")){
+							pasa=true;
+						} 
+					}
+					if (pasa) {
+						Intent intent = new Intent(WorkDayActivity.this, TabGeneralActivity.class);
+						intent.putExtras(bun);
+						startActivity(intent);
+					}
+				}else if(position==2){
+					bun.putInt("DIA", 3);
+					bun.putInt("VENDEDOR",vendedor);
+					boolean pasa=false;
+					if (configuracion.getOtroDia()==1){
+						pasa=true;
+					} else {
+						if (funcion.optenerNumeroDiaActual()==bun.getInt("DIA")){
+							pasa=true;
+						} 
+					}
+					if (pasa) {
+						Intent intent = new Intent(WorkDayActivity.this, TabGeneralActivity.class);
+						intent.putExtras(bun);
+						startActivity(intent);
+					}
+				}else if(position==3){
+					bun.putInt("DIA", 4);
+					bun.putInt("VENDEDOR",vendedor);
+					boolean pasa=false;
+					if (configuracion.getOtroDia()==1){
+						pasa=true;
+					} else {
+						if (funcion.optenerNumeroDiaActual()==bun.getInt("DIA")){
+							pasa=true;
+						} 
+					}
+					if (pasa) {
+						Intent intent = new Intent(WorkDayActivity.this, TabGeneralActivity.class);
+						intent.putExtras(bun);
+						startActivity(intent);
+						}
+				}else if(position==4){
+					bun.putInt("DIA", 5);
+					bun.putInt("VENDEDOR",vendedor);
+					boolean pasa=false;
+					if (configuracion.getOtroDia()==1){
+						pasa=true;
+					} else {
+						if (funcion.optenerNumeroDiaActual()==bun.getInt("DIA")){
+							pasa=true;
+						} 
+					}
+					if (pasa) {
+						Intent intent = new Intent(WorkDayActivity.this, TabGeneralActivity.class);
+						intent.putExtras(bun);
+						startActivity(intent);
+					}
+					
+				}else if(position==5){
+					bun.putInt("DIA", 6);
+					bun.putInt("VENDEDOR",vendedor);
+					boolean pasa=false;
+					if (configuracion.getOtroDia()==1){
+						pasa=true;
+					} else {
+						if (funcion.optenerNumeroDiaActual()==bun.getInt("DIA")){
+							pasa=true;
+						} 
+					}
+					if (pasa) {
+						Intent intent = new Intent(WorkDayActivity.this, TabGeneralActivity.class);
+						intent.putExtras(bun);
+						startActivity(intent);
+					}
+				}
+				else if(position==6){
+					bun.putInt("DIA", 0);
+					bun.putInt("VENDEDOR",vendedor);
+					boolean pasa=false;
+					if (configuracion.getOtroDia()==1){
+						pasa=true;
+					} else {
+						if (funcion.optenerNumeroDiaActual()==bun.getInt("DIA")){
+							pasa=true;
+						} 
+					}
+					if (pasa) {
+						Intent intent = new Intent(WorkDayActivity.this, TabGeneralActivity.class);
+						intent.putExtras(bun);
+						startActivity(intent);
+					}
+				}
+				
+			}
+		});
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.work_day, menu);
+		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		int id = item.getItemId();
+		if (id == R.id.ventas_periodo) {
+			Intent intent = new Intent(WorkDayActivity.this, SalesPeriodActivity.class);
+			intent.putExtras(bun);
+			startActivity(intent);
+			return true;
+		}else if(id == R.id.cerrar_sesion){
+			startActivity(new Intent(getBaseContext(), MainActivity.class)
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
+			controladorUsuario.cerrarSesion(this);
+			finish();
+		}else if(id == R.id.sincronizar){
+			Intent i = new Intent(WorkDayActivity.this, SyncActivity.class);
+			bun.putString("SINCRONIZACION","GENERAL");
+			i.putExtras(bun);
+			startActivity(i);
+		}
+		return super.onOptionsItemSelected(item);
+	}
+
+
+}

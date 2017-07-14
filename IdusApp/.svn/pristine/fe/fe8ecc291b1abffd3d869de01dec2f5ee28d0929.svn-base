@@ -1,0 +1,61 @@
+package com.gvs.entidades;
+
+import android.os.Parcel;
+import android.os.Parcelable;
+
+public class Sincronizador  implements Parcelable {
+	private int codigoEmpresa;
+	private int codigoVendedor;
+	private long fechaIncio;
+	private long fecha;
+	private String modo;
+	private String internet;
+	
+	
+	public int getCodigoEmpresa() {
+		return codigoEmpresa;
+	}
+	public void setCodigoEmpresa(int codigoEmpresa) {
+		this.codigoEmpresa = codigoEmpresa;
+	}
+	public int getCodigoVendedor() {
+		return codigoVendedor;
+	}
+	public void setCodigoVendedor(int codigoVendedor) {
+		this.codigoVendedor = codigoVendedor;
+	}
+	public long getFechaIncio() {
+		return fechaIncio;
+	}
+	public void setFechaIncio(long fechaIncio) {
+		this.fechaIncio = fechaIncio;
+	}
+	public long getFecha() {
+		return fecha;
+	}
+	public void setFecha(long fecha) {
+		this.fecha = fecha;
+	}
+	public String getModo() {
+		return modo;
+	}
+	public void setModo(String modo) {
+		this.modo = modo;
+	}
+	public String getInternet() {
+		return internet;
+	}
+	public void setInternet(String internet) {
+		this.internet = internet;
+	}
+	@Override
+	public int describeContents() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+	@Override
+	public void writeToParcel(Parcel dest, int flags) {
+		// TODO Auto-generated method stub
+		
+	}
+}

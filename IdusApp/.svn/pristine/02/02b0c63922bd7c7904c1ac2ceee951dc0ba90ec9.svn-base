@@ -1,0 +1,220 @@
+package com.gvs.idusapp;
+
+import java.util.Collection;
+import java.util.List;
+import com.gvs.busquedas.BusquedaClientes;
+import com.gvs.busquedas.BusquedaCobranza;
+import com.gvs.busquedas.BusquedaConfiguracion;
+import com.gvs.busquedas.BusquedaEncuestas;
+import com.gvs.busquedas.BusquedaInforme;
+import com.gvs.busquedas.BusquedaNoAtendidos;
+import com.gvs.busquedas.BusquedaPedidos;
+import com.gvs.busquedas.BusquedaSincronizacion;
+import com.gvs.busquedas.BusquedasCierreDeDia;
+import com.gvs.conectoras.ConectorActualizacion;
+import com.gvs.conectoras.ConectorCliente;
+import com.gvs.conectoras.ConectorCobranza;
+import com.gvs.conectoras.ConectorControlDeuda;
+import com.gvs.conectoras.ConectorFinDeDia;
+import com.gvs.conectoras.ConectorGeneral;
+import com.gvs.conectoras.ConectorInforme;
+import com.gvs.conectoras.ConectorLog;
+import com.gvs.conectoras.ConectorNoAtendido;
+import com.gvs.conectoras.ConectorPedido;
+import com.gvs.conectoras.ConectorRespuestaEncuesta;
+import com.gvs.conectoras.ConectorSincronizador;
+import com.gvs.conectoras.ConectorVendedor;
+import com.gvs.entidades.CierresDeDia;
+import com.gvs.entidades.Client;
+import com.gvs.entidades.Configuracion;
+import com.gvs.entidades.Gain;
+import com.gvs.entidades.Informe;
+import com.gvs.entidades.Log;
+import com.gvs.entidades.NoAtendido;
+import com.gvs.entidades.Order;
+import com.gvs.entidades.RespuestaEncuestas;
+import com.gvs.entidades.Sincronizador;
+import com.gvs.utilidades.Funciones;
+import android.app.Activity;
+import android.content.Intent;
+import android.os.Bundle;
+import android.os.Handler;
+import android.view.KeyEvent;
+import android.widget.Toast;
+
+public class SyncActivity extends Activity {
+
+	private int empresa, vendedor;
+	private Funciones funcion;
+	private Configuracion configuracion;
+	private Bundle bun;
+	private Handler handler;
+	private BusquedaConfiguracion busquedaConfiguracion;
+	private ConectorGeneral conectorGeneral;
+	private BusquedaSincronizacion busquedaSincronizacion;
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_sync);
+		try {
+			bun = getIntent().getExtras();
+			empresa = bun.getInt("EMPRESA");
+			vendedor = bun.getInt("VENDEDOR");
+			handler = new Handler();
+			funcion = new Funciones(this);
+			busquedaConfiguracion = new BusquedaConfiguracion(this);
+			busquedaSincronizacion=new BusquedaSincronizacion(this);
+			configuracion = busquedaConfiguracion.buscarConfiguracion();
+			bun.putInt("EMPRESA", empresa);
+			bun.putInt("VENDEDOR", vendedor);
+							
+			if (funcion.conexionInternet()) {
+				Thread thread = new Thread() {
+					public void run() {
+						try {
+							if(busquedaSincronizacion.realizoSincronizacionGeneral(SyncActivity.this, "T", empresa, vendedor)){
+								conectorGeneral = new ConectorActualizacion(configuracion,empresa, vendedor,"ACTUALIZACIONPENDIENTE", SyncActivity.this);
+								if (conectorGeneral.correr(SyncActivity.this)) {
+									enviarDatos();
+								}
+							}else{
+								conectorGeneral = new ConectorActualizacion(configuracion,empresa, vendedor,"ACTUALIZACIONGENERAL", SyncActivity.this);
+								if (conectorGeneral.correr(SyncActivity.this)) {
+									enviarDatos();
+								}
+							}
+							if (bun.getString("SINCRONIZACION").equals("GENERAL")) {
+								finish();
+							} else {
+								Intent intent = new Intent(SyncActivity.this,WorkDayActivity.class);
+								intent.putExtras(bun);
+								startActivity(intent);
+								finish();
+							}
+						} catch (Exception e) {
+							handler.post(new Runnable() {
+								@Override
+								public void run() {
+									finish();
+								}
+							});
+						}
+					}
+				};
+				thread.start();
+			} else {
+				finish();
+				 Toast toast = Toast.makeText(getApplicationContext(),"Sincronizacion no realizada", Toast.LENGTH_SHORT);
+				 toast.show();
+			}
+		} catch (Exception ex) {
+			 finish();
+			 Toast toast = Toast.makeText(getApplicationContext(),"Bug en la sincronizacion", Toast.LENGTH_SHORT);
+			 toast.show();
+		}
+	}	
+	
+	public void enviarDatos()throws Exception{
+		String mnesaje="";
+		try{
+		   // Log.e("ERROR","mnesaje=1");
+			BusquedaNoAtendidos controladorNoAtendido = new BusquedaNoAtendidos(SyncActivity.this);
+			controladorNoAtendido.marcarParaEnviar();
+			Collection<NoAtendido> noAtendidos = controladorNoAtendido.buscarNoAtendidosParaEnviar();
+			for (NoAtendido noAtendido : noAtendidos) {
+				conectorGeneral = new ConectorNoAtendido(configuracion, SyncActivity.this,empresa, noAtendido);
+				conectorGeneral.correr(SyncActivity.this);
+			}
+		//	Log.e("ERROR","mnesaje=2");
+			BusquedasCierreDeDia controladorCierreDia = new BusquedasCierreDeDia(SyncActivity.this, vendedor);
+			controladorCierreDia.marcarParaEnviar();
+			Collection<CierresDeDia> cierres = controladorCierreDia.buscarNoAtendidosParaEnviar();
+			for (CierresDeDia cierre : cierres) {
+				conectorGeneral = new ConectorFinDeDia(configuracion, SyncActivity.this,empresa, cierre);
+				conectorGeneral.correr(SyncActivity.this);
+			}
+		//	Log.e("ERROR","mnesaje=3");
+			BusquedaSincronizacion trbSyncro = new BusquedaSincronizacion(SyncActivity.this);
+			trbSyncro.marcarParaEnviar();
+			Collection<Sincronizador> syncros = trbSyncro.buscarSincronizacionesParaEnviar();
+			for (Sincronizador syncro : syncros) {
+				conectorGeneral = new ConectorSincronizador(configuracion, SyncActivity.this,empresa, syncro);
+				conectorGeneral.correr(SyncActivity.this);
+			}
+			//Log.e("ERROR","mnesaje=4");
+			BusquedaEncuestas controladorEncuesta = new BusquedaEncuestas(SyncActivity.this);
+			controladorEncuesta.marcarParaEnviar();
+			Collection<RespuestaEncuestas> respuestas = controladorEncuesta.buscarRespuestasParaEnviar();
+			for (RespuestaEncuestas resp : respuestas) {
+				conectorGeneral = new ConectorRespuestaEncuesta(configuracion, SyncActivity.this,empresa, vendedor, resp);
+				conectorGeneral.correr(SyncActivity.this);
+			}
+			//Log.e("ERROR","mnesaje=5");
+			BusquedaCobranza controladorCobranza = new BusquedaCobranza(SyncActivity.this);
+			List<Gain> list_gain = controladorCobranza.buscarCobranzas();
+			for (Gain gain : list_gain) {
+				conectorGeneral = new ConectorCobranza(configuracion, SyncActivity.this,empresa, gain);
+				conectorGeneral.correr(SyncActivity.this);
+			}
+			//Log.e("ERROR","mnesaje=6");
+			BusquedaClientes controladorCliente = new BusquedaClientes(SyncActivity.this);
+			List<Client> list_client = controladorCliente.buscarClientesActualizados();
+			for (Client client : list_client) {
+				conectorGeneral = new ConectorCliente(configuracion, empresa,client.getCodigo(),client.getLatitud(),client.getLongitud());
+				conectorGeneral.correr(SyncActivity.this);
+			}
+			
+		//	Log.e("ERROR","mnesaje=7");
+			BusquedaPedidos trbPedidos = new BusquedaPedidos(SyncActivity.this);
+			trbPedidos.marcarParaEnviarPedidos();
+			List<Order> pedidos = trbPedidos.buscarPedidosParaEnviar();
+			for (Order pedido : pedidos) {
+				try {
+					conectorGeneral = new ConectorPedido(configuracion,SyncActivity.this, pedido,empresa, vendedor);
+					conectorGeneral.correr(SyncActivity.this);
+					trbPedidos.pedidoEnviadoCorrectamente(Integer.parseInt(pedido.getNumber()));
+				} catch (Exception ex) {
+					trbPedidos.pedidoConErrorAlEnvio(Integer.parseInt(pedido.getNumber()));
+					continue;
+				}
+			}
+		//	Log.e("ERROR","mnesaje=8");
+			conectorGeneral = new ConectorControlDeuda(configuracion, empresa,SyncActivity.this);
+			conectorGeneral.correr(SyncActivity.this);
+			//Log.e("ERROR","mnesaje=9");
+			conectorGeneral = new ConectorVendedor(configuracion, empresa,vendedor,funcion.getVersionAplicacion(),funcion.getDeviceName());
+			conectorGeneral.correr(SyncActivity.this);
+			
+//			Log.e("ERROR","mnesaje=10");
+			BusquedaInforme busLog = new BusquedaInforme(SyncActivity.this);
+			List<Log> lista_log = busLog.buscarLogs();
+			for (Log log : lista_log) {
+				conectorGeneral = new ConectorLog(configuracion,SyncActivity.this,empresa,log);
+			    conectorGeneral.correr(SyncActivity.this);							
+			}
+//			Log.e("ERROR","mnesaje=11");
+			BusquedaInforme busAnalityc = new BusquedaInforme(SyncActivity.this);
+			List<Informe> list_analityc = busAnalityc.buscarInformes();
+			for (Informe informe : list_analityc) {
+				conectorGeneral = new ConectorInforme(configuracion,SyncActivity.this,empresa,informe);
+			    conectorGeneral.correr(SyncActivity.this);							
+			}
+			
+		} catch (Exception ex) {
+			throw new Exception(ex.getMessage()+":"+mnesaje);
+		}
+	}
+	
+	@Override
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		 if (keyCode == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0) {
+			 Toast toast = Toast.makeText(getApplicationContext(),"Espere que la sincronizacion termine", Toast.LENGTH_SHORT);
+			 toast.show();
+			 return false;
+		 }else{
+			 return super.onKeyDown(keyCode, event);
+		 }
+	}
+
+}

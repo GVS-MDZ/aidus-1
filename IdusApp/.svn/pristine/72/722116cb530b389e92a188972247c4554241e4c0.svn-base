@@ -1,0 +1,935 @@
+package com.gvs.idusapp;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import com.gvs.busquedas.BusquedaArticulos;
+import com.gvs.busquedas.BusquedaComprobantes;
+import com.gvs.busquedas.BusquedaPedidos;
+import com.gvs.busquedas.BusquedasCierreDeDia;
+import com.gvs.controladores.ControladorCliente;
+import com.gvs.controladores.ControladorCobranza;
+import com.gvs.controladores.ControladorPedido;
+import com.gvs.controladores.ControladorUsuario;
+import com.gvs.entidades.Articulos;
+import com.gvs.entidades.Configuracion;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Client;
+import com.gvs.utilidades.DetectorDeConexion;
+import com.gvs.utilidades.Funciones;
+
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.DatePickerDialog;
+import android.app.Dialog;
+import android.content.ContentValues;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Color;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.os.Bundle;
+import android.text.InputType;
+import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.Window;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.DatePicker;
+import android.widget.EditText;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.TextView;
+import android.widget.Toast;
+
+public class RealizeOrderActivity extends Activity {
+	
+	private double latitud=0;
+	private double longitud=0;
+	private double precision=0;
+	private String proveedor="";
+	private long numeroPedido=0;
+	private int request_code = 1;
+	private int cantidad_contada=0;
+	private int cantidadCombo;
+	static final int DATE_DIALOG_ID = 0;
+	private int mYear,mMonth,mDay;
+	private String total="0";
+	private Button btn_buscar,btn_agregar,btn_ver_item,btn_finalizar;
+	private RadioGroup radio_group;
+	private RadioButton radio_numerico,radio_alfanumerico,radio_detalle;
+	private EditText txt_busqueda,txt_detalle,txt_cantidad,txt_descuento,txt_stock,txt_precio,txt_multiplo,txt_item_acumulado,txt_item_permitido,txt_fecha,txt_observacion;
+	private TextView lbl_objetivo,lbl_total;
+	private Articulos articulo;
+	private Bundle bun ;
+	private Funciones funcion ;
+	private LocationManager locManager;
+	private LocationListener locLis;
+	private ControladorPedido pedido;
+	private BusquedaPedidos busPed ;
+	private BusquedaArticulos busArt;
+	private Configuracion configuracion;
+	private ControladorUsuario controladorUsuario;
+	private ControladorCliente controladorCliente;
+	private Menu menu2;
+	private int dia;
+	private boolean gpsActivado=false;
+	private boolean cliente_localizado=false;
+	private boolean cliente_con_deuda=false;
+	private Dialog dialog_gps;
+	private Dialog dialog_cobranza;
+	private ControladorCobranza controladorCobranza;
+	private BusquedaComprobantes busquedaComprobante;
+	private String ultima_factura;
+	private Location location;
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_realize_order);
+		btn_buscar=(Button)findViewById(R.id.btn_buscar_articulo);
+		btn_agregar=(Button)findViewById(R.id.btn_agregar);
+		btn_finalizar=(Button)findViewById(R.id.btn_finalizar);
+		btn_ver_item=(Button)findViewById(R.id.btn_items);
+		txt_busqueda=(EditText)findViewById(R.id.input_busqueda);
+		txt_detalle=(EditText)findViewById(R.id.txt_detalle);
+		txt_cantidad=(EditText)findViewById(R.id.txt_cantidad);
+		txt_descuento=(EditText)findViewById(R.id.txt_descuento);
+		txt_stock=(EditText)findViewById(R.id.txt_stock);
+		txt_precio=(EditText)findViewById(R.id.txt_precio);
+		lbl_objetivo=(TextView)findViewById(R.id.lbl_objetivo_pedido);
+		lbl_total=(TextView)findViewById(R.id.lbl_total_pedido);
+		txt_multiplo=(EditText)findViewById(R.id.txt_multiplo);
+		txt_item_acumulado=(EditText)findViewById(R.id.txt_item_acumulado);
+		txt_item_permitido=(EditText)findViewById(R.id.txt_item_permitido);
+		txt_fecha=(EditText)findViewById(R.id.txt_fecha_pedido);
+		txt_observacion=(EditText)findViewById(R.id.txt_observacion);
+		txt_busqueda.setInputType(InputType.TYPE_CLASS_NUMBER);
+		radio_group=(RadioGroup)findViewById(R.id.radio_tipo_texto);
+		radio_numerico=(RadioButton)findViewById(R.id.radio_tipo_numerico);
+		radio_alfanumerico=(RadioButton)findViewById(R.id.radio_tipo_alfa);
+		radio_detalle=(RadioButton)findViewById(R.id.radio_detalle);
+	    pedido = new ControladorPedido(RealizeOrderActivity.this);
+	    busArt = new BusquedaArticulos(RealizeOrderActivity.this);
+	    funcion= new Funciones();
+	    configuracion = funcion.devolverConfiguracion(RealizeOrderActivity.this);
+	    bun= getIntent().getExtras();
+	    controladorUsuario = new ControladorUsuario();
+	    controladorCliente=new ControladorCliente(this);
+	    controladorCobranza=new ControladorCobranza(this);
+	    busquedaComprobante=new BusquedaComprobantes(this);
+		numeroPedido=bun.getLong("NUMERO");
+		dia=bun.getInt("DIA");
+		total="0";	
+		total=funcion.formatDecimal((pedido.totalPedido(bun.getLong("NUMERO"))),2);
+		lbl_total.setText("TOTAL: "+total);
+		if(bun.getInt("ITEMS")>0){
+			cantidad_contada=bun.getInt("ITEMS");
+			bun.putInt("ITEM", pedido.numeroItesmPorPedido(bun.getLong("NUMERO")));
+		}
+		txt_item_acumulado.setText(String.valueOf(bun.getInt("ITEM")));
+		//activar geolocalizacion
+		if (configuracion.getServicioGeo()==1){
+			comenzarLocalizacion();
+		}
+		//activar descuento
+		if (configuracion.getDescuento()==1){txt_descuento.setEnabled(true);} 
+		else {txt_descuento.setEnabled(false);}
+		txt_item_permitido.setText(String.valueOf(configuracion.getCantidadItems()));		
+		txt_precio.setEnabled(false);
+		txt_precio.setText("0");
+		txt_precio.setTextColor(Color.BLACK);
+		txt_multiplo.setEnabled(false);
+		txt_stock.setEnabled(false);
+		txt_item_permitido.setEnabled(false);
+		txt_item_acumulado.setEnabled(false);
+		txt_item_permitido.setTextColor(Color.BLACK);
+		txt_item_acumulado.setTextColor(Color.BLACK);
+		txt_detalle.setEnabled(false);
+		txt_detalle.setTextColor(Color.BLACK);
+		txt_cantidad.setText("");
+		txt_descuento.setText("0");
+		txt_fecha.setText(funcion.dateToString_dd_mm_yyyy(new Date().getTime() + 86400000));
+		int codigoCliente = bun.getInt("CODIGOCLIENTE");
+		///objetivo por visita
+		BaseDeDatos baseDeDatos = new BaseDeDatos(RealizeOrderActivity.this, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		String Sql = "SELECT * FROM OBJXVISITA WHERE CODIGOCLIENTE=" + codigoCliente + " AND PERIODO='" + funcion.dateToString_MMYYYY(new java.util.Date().getTime()) + "'";
+		Cursor cur = db.rawQuery(Sql, null);
+		if (cur.moveToNext()){
+			double objetivoActual=cur.getDouble(cur.getColumnIndex("OBJ_ACT"));
+			double cantidadVisitas=cur.getDouble(cur.getColumnIndex("CAN_VIS"));
+			if (objetivoActual>0 && cantidadVisitas>0){
+				double objetivoXVisita = (objetivoActual/cantidadVisitas)* 1.21;
+				lbl_objetivo.setText("OBJETIVO: "+funcion.formatDecimal(objetivoXVisita, 1));
+			}
+		}else{
+			lbl_objetivo.setText("OBJETIVO: 0.00");
+		}
+	
+		Client cliente=controladorCliente.buscarCliente(codigoCliente);
+		if(cliente.getLatitud()==0 && cliente.getLongitud()==0){
+			cliente_localizado=false;
+		}else{
+			cliente_localizado=true;
+		}
+		
+		if(configuracion.getControl_deuda()==1){
+			int cantidad=busquedaComprobante.buscarComprobantesPorPeriodo(codigoCliente,configuracion.getDia_contol());
+			if(cantidad>0){
+			   int cantidad_cobranzas=controladorCobranza.buscarComprobantesPagados(codigoCliente,configuracion.getDia_contol());
+			   if(cantidad_cobranzas>0){
+				   cliente_con_deuda=false;
+			   }else{
+				    ultima_factura=busquedaComprobante.buscarComprobantesMasAntiguo(codigoCliente, configuracion.getDia_contol());
+				   cliente_con_deuda=true;
+			   } 
+			}else{
+				cliente_con_deuda=false;
+			}
+		}else{
+			cliente_con_deuda=false;
+		}
+		
+		
+		
+		radio_group.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {		
+			@Override
+			public void onCheckedChanged(RadioGroup group, int checkedId) {
+				if(radio_numerico.isChecked()==true){
+					txt_busqueda.setInputType(InputType.TYPE_CLASS_NUMBER);
+					txt_busqueda.setHint("Codigo");
+				}else if(radio_alfanumerico.isChecked()==true){
+					txt_busqueda.setInputType(InputType.TYPE_CLASS_TEXT);
+					txt_busqueda.setHint("Codigo");
+				}else if(radio_detalle.isChecked()==true){
+					txt_busqueda.setInputType(InputType.TYPE_CLASS_TEXT);
+					txt_busqueda.setHint("Detalle");
+				}
+			}
+		});
+		
+		btn_buscar.setOnClickListener(new OnClickListener() {	
+			@Override
+			public void onClick(View v) {
+				try {	
+					if (configuracion.getServicioGeo()==1){
+						comenzarLocalizacion();
+					}
+					if(gpsActivado){
+						if(cliente_localizado){
+							 if(!cliente_con_deuda){
+								if(!txt_busqueda.getText().toString().trim().equals("")){
+									String codigo="";
+								    busPed = new BusquedaPedidos(RealizeOrderActivity.this);
+									if (txt_busqueda.equals("")==false && codigo.equals("")) {
+										codigo=txt_busqueda.getText().toString().trim();
+									}	
+									//buscar por codigo
+									if (radio_numerico.isChecked()==true ||radio_alfanumerico.isChecked()==true ){
+										//comprueba si ya fue cargado
+										if (busPed.buscarSiYaFueCargadoElArtículo(numeroPedido, codigo)){
+											funcion.MostrarMensajeAceptar(RealizeOrderActivity.this, "Items", "El Articulo ya fue ingresado");
+											codigo="";
+										}else{
+											articulo = busArt.buscarPorCodigo(codigo);	
+											if (articulo!=null){
+												txt_detalle.setText(articulo.getDetalle());
+												if (articulo.getOferta()>0){
+													txt_precio.setText(funcion.formatDecimal(articulo.getOferta(), 2));
+													txt_precio.setTextColor(Color.YELLOW);
+												} else {
+													txt_precio.setText(busArt.precioPorLista(bun.getInt("CODIGOCLIENTE"), articulo));
+													txt_precio.setTextColor(Color.BLACK);
+												}
+												txt_stock.setText(String.valueOf(articulo.getStock()));
+												if (articulo.getStock()<=0){
+													txt_stock.setTextColor(Color.parseColor("#FF0000"));//red
+												} else {
+													txt_stock.setTextColor(Color.parseColor("#008000"));//green
+												}
+												txt_multiplo.setText(String.valueOf(articulo.getMultiplo()));
+												txt_multiplo.setTextColor(Color.BLACK);
+												txt_cantidad.requestFocus();	
+											}else{
+												txt_busqueda.setText("");
+												txt_busqueda.setText("");
+												txt_detalle.setText("");
+												txt_precio.setText("0");
+												txt_cantidad.setText("");
+												txt_stock.setText("");
+												txt_stock.setTextColor(Color.BLACK);
+												txt_multiplo.setText("");
+												txt_descuento.setText("0");
+												funcion.MostrarMensajeAceptar(RealizeOrderActivity.this, "Articulo", "El Articulo no existe");
+											}
+									}
+								     //buscar por detalle
+									} else {
+										articulo=null;
+										String detalle = txt_busqueda.getText().toString().trim();
+										if (detalle.length()>0) {
+											Bundle bunBD = new Bundle();
+											bunBD.putInt("EMPRESA", bun.getInt("EMPRESA"));
+											bunBD.putInt("VENDEDOR", bun.getInt("VENDEDOR"));
+											bunBD.putString("DETALLE", detalle);
+											Intent intent = new Intent(RealizeOrderActivity.this, SearchArticleActivity.class);
+											intent.putExtras(bunBD);
+											startActivityForResult(intent, request_code);
+										}
+									}
+								}
+							 }else{
+								 dialog_cobranza=new Dialog(RealizeOrderActivity.this);
+								 dialog_cobranza.requestWindowFeature(Window.FEATURE_NO_TITLE);
+								 dialog_cobranza.setContentView(R.layout.dialog_cobranza);
+								 dialog_cobranza.show();
+								 TextView txt_mensaje=(TextView)dialog_cobranza.findViewById(R.id.txt_titulo_gps);
+								 txt_mensaje.setText("DEUDA PENDIENTE "+ultima_factura);
+								   Button btn_editar_aceptar = (Button) dialog_cobranza.findViewById(R.id.btn_aceptar_gps);
+									btn_editar_aceptar.setOnClickListener(new OnClickListener() {
+										@Override
+										public void onClick(View v) {
+											finish();
+										}
+									});
+									Button btn_editar_cancelar= (Button) dialog_cobranza.findViewById(R.id.btn_cancelar_gps);
+									btn_editar_cancelar.setOnClickListener(new OnClickListener() {
+										@Override
+										public void onClick(View v) {
+											dialog_cobranza.dismiss();
+										}
+									});
+							 }				
+						}else{
+							   dialog_gps=new Dialog(RealizeOrderActivity.this);
+							   dialog_gps.requestWindowFeature(Window.FEATURE_NO_TITLE);
+							   dialog_gps.setContentView(R.layout.dialogo_gps);
+							   dialog_gps.show();
+							   Button btn_editar_aceptar = (Button) dialog_gps.findViewById(R.id.btn_aceptar_gps);
+								btn_editar_aceptar.setOnClickListener(new OnClickListener() {
+									@Override
+									public void onClick(View v) {
+										finish();
+									}
+								});
+								Button btn_editar_cancelar= (Button) dialog_gps.findViewById(R.id.btn_cancelar_gps);
+								btn_editar_cancelar.setOnClickListener(new OnClickListener() {
+									@Override
+									public void onClick(View v) {
+										dialog_gps.dismiss();
+									}
+								});
+						}
+				    }
+					else{
+						Toast toast =Toast.makeText(getApplicationContext(),"Activar GPS", Toast.LENGTH_SHORT);
+						toast.show();
+					}
+				} catch (Exception e) {					
+					funcion.MostrarMensajeAceptar(RealizeOrderActivity.this, "Error al buscar Artículo", e.getMessage());
+				}
+			}
+		});
+	
+	    btn_agregar.setOnClickListener(new OnClickListener() {	
+			@Override
+			public void onClick(View v) {
+				if (configuracion.getServicioGeo()==1){
+					comenzarLocalizacion();
+				}
+				if(gpsActivado){
+						if(articulo!=null){
+						checkEdit();
+						double cantidad = Double.parseDouble(txt_cantidad.getText().toString().trim());
+						int multiplo = Integer.parseInt(txt_multiplo.getText().toString().trim());
+						//verifica el multiplo
+						if (calcularMultiplo(cantidad, multiplo)) {
+						//verifica la cantiadad	
+						if (Integer.parseInt(txt_cantidad.getText().toString().trim())<=0){
+							funcion.MostrarMensajeAceptar(RealizeOrderActivity.this, "Cantidad", "La catidad debe ser mayor que cero");					
+						} else {
+							//controla stock
+							boolean controlaStock=false;
+							if (articulo!=null){
+								try {
+									controlaStock = busArt.controlaStock(articulo.getRubro(), articulo.getSubRubro());
+								} catch (Exception e) {
+									e.printStackTrace();
+								}
+							}
+							//controla cantidad > stock
+							if (Double.parseDouble(txt_cantidad.getText().toString().trim()) > Double.parseDouble(txt_stock.getText().toString().trim()) && controlaStock) {
+								funcion.MostrarMensajeAceptar(RealizeOrderActivity.this, "CONTROL DE STOCK", "La cantidad ingresada es mayor a el stock disponible de este artículo");
+							} else {
+								//controla si articulo esta cargado
+								if (txt_detalle.getText().toString().trim().equals("")){
+									funcion.MostrarMensajeAceptar(RealizeOrderActivity.this, "BUSQUEDA", "No hay ningun articulo cargado");
+								} else {
+									//controla vendedor
+									if (bun.getInt("VENDEDOR")>0){
+										//controla cliente
+										if (bun.getInt("CODIGOCLIENTE")>0){
+										    try{
+										      cantidadCombo=busArt.buscarCombo(Integer.parseInt(articulo.getCodigoIdus()));
+										    }catch(Exception ex){
+										      cantidadCombo=0;
+										    }
+											int cantidad_acumulada=Integer.parseInt(txt_item_acumulado.getText().toString().trim());
+											int cantidad_suma=0;
+											if(cantidad_acumulada==0 && cantidadCombo==0){
+												 cantidad_suma=1;
+											}else if(cantidad_acumulada==0 && cantidadCombo!=0){
+												cantidad_suma=cantidadCombo;
+											}else if(cantidad_acumulada!=0 && cantidadCombo==0){
+												cantidad_suma=cantidad_acumulada+1;
+											}
+											else{
+											    cantidad_suma=cantidad_acumulada+cantidadCombo;
+											} 
+											if (cantidad_suma <= configuracion.getCantidadItems()){
+												cantidad_contada=cantidad_contada+1;
+											    String cod=articulo.getCodigoIdus();
+											    String obs1=txt_observacion.getText().toString().replace("Obs:","");
+												String obs2=obs1.replace("%"," porciento ");
+												String observacion=obs2.replace("#"," numeral ");
+												ContentValues contCab = new ContentValues();
+												contCab.put("NUMERO", bun.getLong("NUMERO"));
+												contCab.put("NUMEROFINAL", 0);
+												contCab.put("FECHA", new Date().getTime());
+												contCab.put("AVANCE", 0);
+												contCab.put("CODIGOCLIENTE", bun.getInt("CODIGOCLIENTE"));
+												contCab.put("CODIGOVENDEDOR", bun.getInt("VENDEDOR"));
+												contCab.put("CANTIDADITEMS",cantidad_contada);
+												contCab.put("ESTADO", 10);
+												contCab.put("FECHAENVIADO", 0);
+												contCab.put("LATITUD", latitud);
+												contCab.put("LONGITUD", longitud);
+												contCab.put("PRECISION", precision);
+												contCab.put("PROVEE", proveedor);
+												contCab.put("INTERNET", new DetectorDeConexion(RealizeOrderActivity.this).estadoRedes());
+												contCab.put("OBS", observacion);
+												contCab.put("DIA",dia);
+												try {
+													contCab.put("FECHAENTREGA", funcion._stringToDate(txt_fecha.getText().toString()).getTime());
+												} catch (Exception ex) {
+													contCab.put("FECHAENTREGA", new Date().getTime() + 86400000);
+												}
+												ContentValues contCue = new ContentValues();
+												contCue.put("NUMERO", bun.getLong("NUMERO"));
+												contCue.put("NUMEROITEM", cantidad_contada);
+												contCue.put("CODIGOARTICULO",cod);
+												contCue.put("CANTIDAD", Double.parseDouble(txt_cantidad.getText().toString().trim()));
+												double descuento=Double.parseDouble(txt_descuento.getText().toString());
+												double descuento_articulo=0;
+												if(descuento==99){
+													descuento_articulo=99.99;
+												}else{
+													descuento_articulo=descuento;
+												}
+												double precio_descuento=(Double.parseDouble(txt_precio.getText().toString().trim())* descuento_articulo)/100;
+												double precio=Double.parseDouble(txt_precio.getText().toString().trim())-precio_descuento;
+												contCue.put("PRECIO",precio);
+												contCue.put("ESTADO", 10);
+												
+												contCue.put("DESCUENTO", descuento_articulo);
+												try {
+													int nuevoItem = pedido.grabarPedido(contCab, contCue);
+													if(busArt.esArticuloLanzamiento(bun.getInt("CODIGOCLIENTE"), cod)){
+														MenuItem m1=menu2.findItem(R.id.menu_lanzamientos);
+													    m1.setIcon(R.drawable.amarillo);
+													}
+													if(busArt.esArticuloIndispensable(bun.getInt("CODIGOCLIENTE"), cod)){
+														MenuItem m1=menu2.findItem(R.id.menu_imprescindibles);
+													    m1.setIcon(R.drawable.amarillo);
+													}
+													if(busArt.esArticuloSugerido(cod)){
+														MenuItem m1=menu2.findItem(R.id.menu_sugeridos);
+													    m1.setIcon(R.drawable.amarillo);
+													}
+													pedido.sumarCantidadImpresindibles(bun.getInt("CODIGOCLIENTE"), cod, Double.parseDouble(txt_cantidad.getText().toString().trim()));
+													pedido.sumarCantidadLanzamientos(bun.getInt("CODIGOCLIENTE"), cod, Double.parseDouble(txt_cantidad.getText().toString().trim()));
+													if (nuevoItem>0){
+														txt_busqueda.setText("");
+														txt_busqueda.setText("");
+														txt_detalle.setText("");
+														txt_precio.setText("0");
+														txt_cantidad.setText("");
+														txt_stock.setText("");
+														txt_stock.setTextColor(Color.BLACK);
+														txt_multiplo.setText("");
+														txt_descuento.setText("0");
+														txt_item_acumulado.setText(String.valueOf(cantidad_suma));
+														total=funcion.formatDecimal((pedido.totalPedido(bun.getLong("NUMERO"))),2);
+														lbl_total.setText("TOTAL: "+total);
+														articulo=null;
+														txt_busqueda.requestFocus();
+														
+														Toast toast =Toast.makeText(getApplicationContext(),"Articulo cargado", Toast.LENGTH_SHORT);
+														toast.show();
+													}
+												} catch (Exception ex) {
+													funcion.MostrarMensajeAceptar(RealizeOrderActivity.this, "ERROR", "ERROR DE DISPOSITIVO: " + ex.getMessage());
+												}
+											} else {
+												funcion.MostrarMensajeAceptar(RealizeOrderActivity.this, "CANTIDAD DE ITEMS", "Ha llegado al límite de la cantidad de items, permitida");
+											}
+										} else {
+											funcion.MostrarMensajeAceptar(RealizeOrderActivity.this, "CLIENTE", "Error de perdida de datos. no se puede identificar el cliente");
+										}
+									} else {
+										funcion.MostrarMensajeAceptar(RealizeOrderActivity.this, "VENDEDOR", "Error de perdida de datos. no se puede identificar el cliente");
+									}
+								}
+							}
+						}
+						} else {
+							funcion.MostrarMensajeAceptar(RealizeOrderActivity.this, "Multiplo", "La cantidad ingresada debe ser multiplo de: " + txt_multiplo.getText().toString());
+						}
+					}
+				}else{
+					Toast toast =Toast.makeText(getApplicationContext(),"Activar GPS", Toast.LENGTH_SHORT);
+					toast.show();
+				}	
+		  }
+		});
+	
+	    btn_ver_item.setOnClickListener(new OnClickListener() {	
+			@Override
+			public void onClick(View v) {
+				if(Double.parseDouble(total.toString())>0){
+				bun.putString("CONSUL-PED", "");
+				Intent intent = new Intent(RealizeOrderActivity.this,OrderDetailActivity.class);
+				intent.putExtras(bun);
+				startActivity(intent);
+				}
+			}
+		});
+	    
+	    btn_finalizar.setOnClickListener(new OnClickListener() {	
+			@Override
+			public void onClick(View v) {
+				try {
+					if (configuracion.getServicioGeo()==1){
+						comenzarLocalizacion();
+					}
+					if(gpsActivado){
+						if(Double.parseDouble(total)>0){
+						pedido.finalizarPedidoCompleto(bun.getLong("NUMERO"),txt_observacion.getText().toString(),funcion._stringToDate(txt_fecha.getText().toString()).getTime());
+						BusquedasCierreDeDia cierreDia = new BusquedasCierreDeDia(RealizeOrderActivity.this,bun.getInt("EMPRESA"), bun.getInt("VENDEDOR"));
+						int pedidosPendientes = cierreDia.devolverCantidadNoEnviados(dia);
+						if (pedidosPendientes>=3) {
+							Intent intent2=new Intent(RealizeOrderActivity.this,OrderClientActivity.class);
+							intent2.putExtras(bun);
+							startActivity(intent2);
+							Toast toast =Toast.makeText(getApplicationContext(),"Pedido finalizado correctamente", Toast.LENGTH_SHORT);
+							toast.show();
+							finish();
+						}else{
+							Toast toast =Toast.makeText(getApplicationContext(),"Pedido finalizado correctamente", Toast.LENGTH_SHORT);
+							toast.show();
+							finish();
+						}
+						
+						}
+					}else{
+						Toast toast =Toast.makeText(getApplicationContext(),"Activar GPS", Toast.LENGTH_SHORT);
+						toast.show();
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}				
+			}
+		});
+	
+	    txt_fecha.setOnClickListener(new OnClickListener() {		
+			@Override
+			public void onClick(View v) {
+				showDialog(DATE_DIALOG_ID);
+			}
+		});
+	}
+	
+	//actualiza la vista cuando la actividad resibe nuevamente el foco
+	@Override
+	protected void onRestart() {
+		super.onRestart();
+		final ControladorPedido pedido = new ControladorPedido(RealizeOrderActivity.this);
+		total="0";
+		total=funcion.formatDecimal((pedido.totalPedido(bun.getLong("NUMERO"))),2);
+		int cantidad_acumulada=pedido.buscarCantidadAcumulada(bun.getLong("NUMERO"));
+		txt_item_acumulado.setText(String.valueOf(cantidad_acumulada));
+		lbl_total.setText("TOTAL: "+total); 
+		List<Map<String, String>> list1 = new ArrayList <Map<String, String>>();
+    	List<Map<String, String>> list2 = new ArrayList <Map<String, String>>();
+    	List<Map<String, String>> list3 = new ArrayList <Map<String, String>>();
+    	list1=busArt.buscarLANZAMIENTOS(bun.getInt("CODIGOCLIENTE"));
+    	list2=busArt.buscarINIDISPENSABLES(bun.getInt("CODIGOCLIENTE"));
+    	list3=busArt.buscarSUGERIDOS();
+    	if(list1==null){
+    		 	MenuItem m1=menu2.findItem(R.id.menu_lanzamientos);
+    		    m1.setIcon(R.drawable.verde);
+    	}else{
+    		List<Map<String, String>> list4 = new ArrayList <Map<String, String>>();
+    		list4=busArt.buscarLanzamientosCargados(bun.getInt("CODIGOCLIENTE"));
+    		if(list4==null){
+    			MenuItem m1=menu2.findItem(R.id.menu_lanzamientos);
+       		 	m1.setIcon(R.drawable.rojo);
+    		}else{
+    			MenuItem m1=menu2.findItem(R.id.menu_lanzamientos);
+    			m1.setIcon(R.drawable.amarillo);
+    		}
+    		 
+    	}
+    	if(list2==null){
+    			MenuItem m2=menu2.findItem(R.id.menu_imprescindibles);
+    		    m2.setIcon(R.drawable.verde);
+    	}else{
+ 			List<Map<String, String>> list4 = new ArrayList <Map<String, String>>();
+    		list4=busArt.buscarInidispensableCargado(bun.getInt("CODIGOCLIENTE"));
+    		if(list4==null){
+    			MenuItem m1=menu2.findItem(R.id.menu_imprescindibles);
+    			m1.setIcon(R.drawable.rojo);
+    		}else{
+    			MenuItem m1=menu2.findItem(R.id.menu_imprescindibles);
+    			m1.setIcon(R.drawable.amarillo);
+    		}
+    	}
+    	if(list3==null){
+    		 MenuItem m3=menu2.findItem(R.id.menu_sugeridos);
+    		 m3.setIcon(R.drawable.verde);
+	   	}else{
+	   		List<Map<String, String>> list4 = new ArrayList <Map<String, String>>();
+    		list4=busArt.buscarLanzamientosCargados(bun.getInt("CODIGOCLIENTE"));
+    		if(list4==null){
+    			MenuItem m1=menu2.findItem(R.id.menu_sugeridos);
+       		    m1.setIcon(R.drawable.rojo);
+    		}else{
+    			MenuItem m1=menu2.findItem(R.id.menu_sugeridos);
+       		    m1.setIcon(R.drawable.amarillo);
+    		}
+	   	}
+	}
+
+	//detecta el articulo seleccionado cuando realiza busqueda por detalle
+	@Override
+	public void onActivityResult(int requestCode, int resultCode, Intent data) {
+    	try{
+		if ((requestCode == request_code) && (resultCode == RESULT_OK)){
+            busArt = new BusquedaArticulos(RealizeOrderActivity.this);
+            busPed = new BusquedaPedidos(RealizeOrderActivity.this);
+        	articulo = busArt.buscarPorCodigo(data.getDataString());	
+        	if (busPed.buscarSiYaFueCargadoElArtículo(numeroPedido,articulo.getCodigoIdus())){
+				funcion.MostrarMensajeAceptar(RealizeOrderActivity.this, "Control de Items", "El Articulo que desea ingresar, ya fue ingresado. Edite el pedido para cambair la cantidad");		
+				articulo=null;
+        	}else{
+			if (articulo!=null){
+				txt_detalle.setText(articulo.getDetalle());
+				if (articulo.getOferta()>0){
+					txt_precio.setText(funcion.formatDecimal(articulo.getOferta(), 2));
+					txt_precio.setTextColor(Color.YELLOW);
+				} else {
+					txt_precio.setText(busArt.precioPorLista(bun.getInt("CODIGOCLIENTE"), articulo));
+					txt_precio.setTextColor(Color.BLACK);
+				}
+				txt_stock.setText(String.valueOf(articulo.getStock()));
+				if (articulo.getStock()<=0){
+					txt_stock.setTextColor(Color.parseColor("#FF0000"));//red
+				} else {
+					txt_stock.setTextColor(Color.parseColor("#008000"));//green
+				}
+				txt_multiplo.setText(String.valueOf(articulo.getMultiplo()));
+				txt_multiplo.setTextColor(Color.BLACK);
+				txt_cantidad.requestFocus();	
+			}
+		}
+		}
+    	}catch(Exception ex){
+    		
+    	}
+	}
+    	
+	//detecta evento ATRAS
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event)  {
+        if (keyCode == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0) {
+        	if(Double.parseDouble(total)>0){
+        		//funcion.MostrarMensajeAceptar(RealizeOrderActivity.this, "Advertencia", "Debe finalizar el pedido");	
+        		AlertDialog.Builder alertbox = new AlertDialog.Builder(this);
+        		alertbox.setTitle("Advertencia");
+        		alertbox.setMessage("¿Desea salir sin finalizar el pedido?");
+        		alertbox.setPositiveButton("Aceptar", new DialogInterface.OnClickListener() {
+        			public void onClick(DialogInterface arg0, int arg1) {
+        				onBackPressed();
+        			}
+        		});
+        		alertbox.setNegativeButton("Cancelar", new DialogInterface.OnClickListener() {
+        			public void onClick(DialogInterface arg0, int arg1) {
+        			
+        			}
+        		});
+        		alertbox.show();
+        	
+        	
+        	}else{
+        		onBackPressed();
+        	}
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+    
+    @Override
+    public void onBackPressed() {
+    	super.onBackPressed();
+  
+    }
+    
+    //dialog con el calendario cuando se pulsa la fecha 
+	protected Dialog onCreateDialog(int id) {
+        switch (id) {
+        case DATE_DIALOG_ID:
+        	try {
+            	mDay=Integer.parseInt(txt_fecha.getText().toString().substring(0, 2));
+            	mMonth=Integer.parseInt(txt_fecha.getText().toString().substring(3,5))-1;
+            	mYear=Integer.parseInt(txt_fecha.getText().toString().substring(6, 10));
+                return new DatePickerDialog(RealizeOrderActivity.this,
+                            mDateSetListener,
+                            mYear, mMonth, mDay);				
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+        }
+        return null;
+    }
+   
+	private DatePickerDialog.OnDateSetListener mDateSetListener = new DatePickerDialog.OnDateSetListener() {
+
+        public void onDateSet(DatePicker view, int year, int monthOfYear,int dayOfMonth) {
+            mYear = year;
+            mMonth = monthOfYear+1;
+            mDay = dayOfMonth;
+            txt_fecha.setText((mDay<10?"0": "")+mDay+"-"+(mMonth<10? "0": "")+mMonth+"-"+(mYear<10? "0": "")+mYear);
+        }	
+    };
+	
+    //chequea cajas de texto
+    private void checkEdit(){
+    	if (txt_cantidad.getText().toString().trim().equals("")){
+			txt_cantidad.setText("0");
+		}
+		if (txt_item_acumulado.getText().toString().trim().equals("")){
+			txt_item_acumulado.setText("0");
+		}
+		if (txt_stock.getText().toString().trim().equals("")){
+			txt_stock.setText("0");
+		}
+		if (txt_multiplo.getText().toString().trim().equals("")){
+			txt_multiplo.setText("0");
+		}
+		if (txt_descuento.getText().toString().trim().equals("")){
+			txt_descuento.setText("0");
+		}
+		if (Double.parseDouble(txt_descuento.getText().toString().trim())>99){
+			txt_descuento.setText("99");
+		}
+    }
+  
+    //posicion en la toma de pedido
+    private void comenzarLocalizacion(){
+		
+		try{
+			locManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+			if (locManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+				locManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+			} else {
+				if (locManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)){
+					locManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+				} 
+			}
+		} catch (Exception e){
+			e.printStackTrace();
+		}
+
+		locLis = new LocationListener() {
+			
+			@Override
+			public void onStatusChanged(String provider, int status, Bundle extras) {
+	
+				proveedor=provider;
+			}
+			
+			@Override
+			public void onProviderEnabled(String provider) {
+				gpsActivado=true;
+			}
+			
+			@Override
+			public void onProviderDisabled(String provider) {
+				gpsActivado=false;
+			}
+			
+			@Override
+			public void onLocationChanged(Location location) {	
+				latitud=location.getLatitude();
+				longitud=location.getLongitude();
+				precision=location.getAccuracy();
+				proveedor=location.getProvider();
+			}
+
+		};
+		
+		if (locManager.isProviderEnabled(LocationManager.GPS_PROVIDER)){
+			locManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locLis);
+			
+			 if (locManager != null) {
+			    	location = locManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+               if (location != null) {
+            		latitud=location.getLatitude();
+    				longitud=location.getLongitude();
+               }
+           }
+			gpsActivado=true;
+			
+		} else {
+			gpsActivado=false;
+			if (locManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+				locManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locLis);
+				if (locManager != null) {
+			    	location = locManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                    if (location != null) {
+                    	latitud=location.getLatitude();
+        				longitud=location.getLongitude();
+                    }
+                }
+				
+			} 
+		}
+		
+	}
+
+    private boolean calcularMultiplo(Double cantidad,int multiplo) {
+		int resto =0;
+		if (multiplo>1) {
+			resto = (int) (cantidad%multiplo);
+		} else {
+			resto=0;
+		}
+		if (resto==0) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+    @Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.realize_order, menu);
+		return true;
+	}
+    //se usa para modificar el menu cuando carga
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+    	menu2=menu;
+    	List<Map<String, String>> list1 = new ArrayList <Map<String, String>>();
+    	List<Map<String, String>> list2 = new ArrayList <Map<String, String>>();
+    	List<Map<String, String>> list3 = new ArrayList <Map<String, String>>();
+    	list1=busArt.buscarLANZAMIENTOS(bun.getInt("CODIGOCLIENTE"));
+    	list2=busArt.buscarINIDISPENSABLES(bun.getInt("CODIGOCLIENTE"));
+    	list3=busArt.buscarSUGERIDOS();
+    	if(list1==null){
+    		 	MenuItem m1=menu.findItem(R.id.menu_lanzamientos);
+    		    m1.setIcon(R.drawable.verde);
+    	}else{
+    		List<Map<String, String>> list4 = new ArrayList <Map<String, String>>();
+    		list4=busArt.buscarLanzamientosCargados(bun.getInt("CODIGOCLIENTE"));
+    		if(list4==null){
+    			MenuItem m1=menu.findItem(R.id.menu_lanzamientos);
+       		 	m1.setIcon(R.drawable.rojo);
+    		}else{
+    			MenuItem m1=menu.findItem(R.id.menu_lanzamientos);
+    			m1.setIcon(R.drawable.amarillo);
+    		}
+    		 
+    	}
+    	if(list2==null){
+    			MenuItem m2=menu.findItem(R.id.menu_imprescindibles);
+    		    m2.setIcon(R.drawable.verde);
+    	}else{
+ 			List<Map<String, String>> list4 = new ArrayList <Map<String, String>>();
+    		list4=busArt.buscarInidispensableCargado(bun.getInt("CODIGOCLIENTE"));
+    		if(list4==null){
+    			MenuItem m1=menu.findItem(R.id.menu_imprescindibles);
+    			m1.setIcon(R.drawable.rojo);
+    		}else{
+    			MenuItem m1=menu.findItem(R.id.menu_imprescindibles);
+    			m1.setIcon(R.drawable.amarillo);
+    		}
+    	}
+    	if(list3==null){
+    		 MenuItem m3=menu.findItem(R.id.menu_sugeridos);
+    		 m3.setIcon(R.drawable.verde);
+	   	}else{
+	   		List<Map<String, String>> list4 = new ArrayList <Map<String, String>>();
+    		list4=busArt.buscarLanzamientosCargados(bun.getInt("CODIGOCLIENTE"));
+    		if(list4==null){
+    			MenuItem m1=menu.findItem(R.id.menu_sugeridos);
+       		    m1.setIcon(R.drawable.rojo);
+    		}else{
+    			MenuItem m1=menu.findItem(R.id.menu_sugeridos);
+       		    m1.setIcon(R.drawable.amarillo);
+    		}
+	   	}
+	   
+    	return super.onPrepareOptionsMenu(menu);
+    }
+	
+    @Override	
+	public boolean onOptionsItemSelected(MenuItem item) {
+		int id = item.getItemId();
+		Intent intent;
+		switch (id) {
+		
+		case R.id.menu_lanzamientos:{
+			intent = new Intent(RealizeOrderActivity.this,ArticleLaunchActivity.class);
+			intent.putExtras(bun);
+			startActivityForResult(intent, request_code);
+			break;
+		}case R.id.menu_imprescindibles:{
+			intent = new Intent(RealizeOrderActivity.this,ArticleIndispensableActivity.class);
+			intent.putExtras(bun);
+			startActivityForResult(intent, request_code);
+			break;
+		}case R.id.menu_sugeridos:{
+			intent = new Intent(RealizeOrderActivity.this,ArticleSuggestedActivity.class);
+			intent.putExtras(bun);
+			startActivityForResult(intent, request_code);
+			break;
+		}case R.id.cerrar_sesion:{
+			startActivity(new Intent(getBaseContext(), MainActivity.class)
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
+			controladorUsuario.cerrarSesion(this);
+			finish();
+			break;
+		}case R.id.sincronizar:{
+			Intent i = new Intent(this, SyncActivity.class);
+			bun.putString("SINCRONIZACION","GENERAL");
+			i.putExtras(bun);
+			startActivity(i);
+			break;
+		}default:
+			break;
+		}
+		return super.onOptionsItemSelected(item);
+	}
+   
+
+}

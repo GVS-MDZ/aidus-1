@@ -1,0 +1,88 @@
+package com.gvs.busquedas;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import com.gvs.idusapp.R;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+import com.gvs.utilidades.Voucher;
+
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+
+public class BusquedaComprobantes {
+	private Context conte;
+	private double total=0;
+	private Funciones funcion = new Funciones();
+	public BusquedaComprobantes(Context cont) {
+		conte=cont;		
+	}
+	
+    public double getTotal() {
+		return total;
+	}
+
+	public void setTotal(double total) {
+		this.total = total;
+	}
+
+	public List<Voucher> buscarComprobantesPorClientes(int codigoCliente){
+		this.total=0;
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		String Sql = "SELECT * FROM COMPROBANTESVENTAS WHERE CODIGOCLIENTE=" + codigoCliente +" ORDER BY FECHA,CLASE,TIPO,SUCURSAL,NUMERO";
+		Cursor cur = db.rawQuery(Sql, null);
+		if (cur.getCount()>0){
+			List<Voucher> list=new ArrayList<Voucher>();
+			while (cur.moveToNext()){
+				Voucher  voucher=new Voucher();
+				voucher.setClase(cur.getString(cur.getColumnIndex("CLASE")));
+				voucher.setTipo(cur.getString(cur.getColumnIndex("TIPO")));
+				voucher.setSucursal(cur.getInt(cur.getColumnIndex("SUCURSAL")));
+				voucher.setNumero(cur.getInt(cur.getColumnIndex("NUMERO")));
+				voucher.setComprobante(cur.getString(cur.getColumnIndex("CLASE")) + " - " 
+				+ cur.getString(cur.getColumnIndex("TIPO"))+ " - " 
+			    + funcion.autocompletarNumero(String.valueOf(cur.getInt(cur.getColumnIndex("SUCURSAL"))),4) + " - " 
+			    + funcion.autocompletarNumero(String.valueOf(cur.getInt(cur.getColumnIndex("NUMERO"))),8));
+				voucher.setFecha(funcion.dateToString_yyyymmdd_hhmm(cur.getLong(cur.getColumnIndex("FECHA"))));
+				
+				voucher.setEstado(cur.getInt(cur.getColumnIndex("ESTADO")));
+				if(cur.getInt(cur.getColumnIndex("ESTADO"))==0){
+					voucher.setIcon(R.drawable.amarillo);
+				}else{
+					voucher.setIcon(R.drawable.verde);
+				}
+				if(cur.getString(cur.getColumnIndex("CLASE")).equals("FT") || cur.getString(cur.getColumnIndex("CLASE")).equals("CI") || cur.getString(cur.getColumnIndex("CLASE")).equals("ND"))
+				{
+					if(voucher.getEstado()==0){
+						String Sql2 = "SELECT * FROM COBRANZA WHERE CLASE='"+voucher.getClase()+"' AND TIPO='"+voucher.getTipo()+"' AND SUCURSAL="+voucher.getSucursal()+" AND NUMERO="+voucher.getNumero()+" AND ESTADO=0";
+						Cursor cur2 = db.rawQuery(Sql2, null);
+						double pagado=0;
+						if (cur2.getColumnCount()>0){
+							while (cur2.moveToNext()){
+					     		pagado=pagado+ cur2.getDouble(cur2.getColumnIndex("IMPORTEPAGADO"));
+							}
+						}
+						total+=cur.getDouble(cur.getColumnIndex("SALDO"))-pagado;
+						double calculo=cur.getDouble(cur.getColumnIndex("SALDO"))-pagado;
+						voucher.setSaldo(funcion.formatDecimal(calculo,2));
+					}else{
+						total+=cur.getDouble(cur.getColumnIndex("SALDO"));	
+						voucher.setSaldo(funcion.formatDecimal((cur.getDouble(cur.getColumnIndex("SALDO"))),2));
+					}
+				}else{
+					total-=cur.getDouble(cur.getColumnIndex("SALDO"));
+					voucher.setSaldo(funcion.formatDecimal((cur.getDouble(cur.getColumnIndex("SALDO"))),2));
+				}
+			    list.add(voucher);
+			}
+			
+			return list;
+		} else {
+			return null;
+		}
+		
+	}
+}

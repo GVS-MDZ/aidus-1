@@ -1,0 +1,89 @@
+package com.gvs.conectoras;
+
+import java.io.DataInputStream;
+import java.util.List;
+import android.content.Context;
+import com.gvs.busquedas.BusquedaPedidos;
+import com.gvs.entidades.Configuracion;
+import com.gvs.entidades.Order;
+import com.gvs.entidades.OrderDetail;
+
+public class ConectorPedido extends ConectorGeneral{
+
+	int nVendedor;
+	Order pedido;
+	Context conte;
+	int empresa;
+	int vendedor;
+	private BusquedaPedidos busquedaPedido;
+	
+	public ConectorPedido(Configuracion conf, Context cont, Order pedidoOri,int empresa, int vendedor) {
+		super(conf);
+		this.conte=cont;
+		this.pedido=pedidoOri;
+		this.empresa=empresa;
+		this.vendedor=vendedor;
+	}
+
+	@Override
+	protected String CompletarURL() throws Exception {
+		String cuerpo="";
+	    busquedaPedido = new BusquedaPedidos(conte);
+		try {
+			List<OrderDetail> items = busquedaPedido.buscarItemsPorPedido(Integer.parseInt(pedido.getNumber()));
+			for (OrderDetail item: items){
+				if (cuerpo.equals("")){
+					cuerpo= item.getNumero() +";"+ item.getItem() + ";" + item.getCodigo() + ";" + item.getCantidad() + ";" + item.getPrecio() + ";" + item.getDescuento();
+				} else {
+					cuerpo = cuerpo + "|" + item.getNumero() +";"+ item.getItem() + ";" + item.getCodigo() + ";" + item.getCantidad() + ";" + item.getPrecio() + ";" + item.getDescuento();
+				}
+			}
+			String observacion="";
+			if(pedido.getObservacion().equals(" ")){
+				observacion= pedido.getObservacion().replace("", "%20");
+			}else{
+				 observacion=pedido.getObservacion();
+			}
+			String strURL ="insertarPedidosAndroidNuevo2?codigoEmpresa=" + empresa + "&numeroOriginal=" + pedido.getNumber() + "&" +
+			"fecha=" + pedido.getDate() + "&avance=" + pedido.getAvance() + "&codigoVendedor=" + pedido.getCodigoVendedor() + 
+			"&codigoCliente="+ pedido.getCodigoCliente() + "&cantidadItem=" + pedido.getItem() + 
+			"&lugar=1&estado=0&internet=" + pedido.getInternet() + "&latitud=" + pedido.getLatitud() +
+			"&longitud=" + pedido.getLongitud() + "&precision=" + pedido.getPrecision() + "&proveedor=" + pedido.getProvee() +
+			"&obs=" + observacion + "&fechaEntrega="+ pedido.getFechaEntrega()+"&fechaInicio="+pedido.getFechainicio()+
+			"&fechaFin="+pedido.getFechafin() + "&itemsCuerpo=" + cuerpo;
+			return strURL;
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new Exception(e.getMessage());
+		}
+	}
+
+	@Override
+	protected void procesarRespuesta(DataInputStream in)throws Exception {
+		try {
+		    int tipoDeDato=0;		
+			busquedaPedido = new BusquedaPedidos(conte);
+			while (true){
+				tipoDeDato = in.readInt();
+				switch (tipoDeDato) {
+				case 1099:	
+					break;
+				case 1:	
+					Order order=new Order();
+					order.setNumber(String.valueOf(in.readInt()));
+					order.setNumber_final(String.valueOf(in.readInt()));
+					order.setDate(String.valueOf(in.readLong()));
+					busquedaPedido.modificarPedidoConector(order);
+					break;
+				default:
+					break;
+				}
+			}
+		} catch (Exception e) {
+			throw new Exception(e.getMessage());
+		}
+		finally{
+			in.close();
+		}
+	}
+	}

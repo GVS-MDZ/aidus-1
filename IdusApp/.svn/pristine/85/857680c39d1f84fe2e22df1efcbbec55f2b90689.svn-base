@@ -1,0 +1,66 @@
+package com.gvs.controladores;
+
+import java.util.ArrayList;
+import java.util.List;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import com.gvs.exceptiones.ExceptionCobranza;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Client;
+import com.gvs.utilidades.Funciones;
+
+public class ControladorCliente {
+	private Context conte;
+	private Funciones funcion = new Funciones();
+	
+	public ControladorCliente(Context cont) {
+		conte=cont;
+	}
+	
+	public List<Client> buscarClientesActualizados() throws ExceptionCobranza{
+		try{
+			List<Client> list_client = new ArrayList<Client>();
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			String Sql = "SELECT * FROM CLIENTES WHERE EDITADO=1";
+			Cursor cur = db.rawQuery(Sql, null);
+			if (cur.getColumnCount()>0){
+				while (cur.moveToNext()){
+					 Client client=new Client();
+					 client.setCodigo(cur.getInt(cur.getColumnIndex("CODIGO")));
+		     		 client.setLatitud(cur.getDouble(cur.getColumnIndex("LATITUD")));
+		     		 client.setLongitud(cur.getDouble(cur.getColumnIndex("LONGITUD")));
+		     		 list_client.add(client);
+				}
+			}
+			return list_client;
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new ExceptionCobranza(e.getMessage());
+		}
+	}
+	
+	public Client buscarCliente(int codigo){
+		try{
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			String Sql = "SELECT * FROM CLIENTES WHERE CODIGO="+codigo;
+			Cursor cur = db.rawQuery(Sql, null);
+			Client cliente=new Client();
+			if (cur.getColumnCount()>0){
+				while (cur.moveToNext()){
+					 Client client=new Client();
+					 client.setCodigo(cur.getInt(cur.getColumnIndex("CODIGO")));
+		     		 client.setLatitud(cur.getDouble(cur.getColumnIndex("LATITUD")));
+		     		 client.setLongitud(cur.getDouble(cur.getColumnIndex("LONGITUD")));
+				}
+			}
+			return cliente;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+}

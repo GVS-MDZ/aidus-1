@@ -1,0 +1,22 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+    <ListView
+        android:id="@+id/lista_pedido_dia"
+        android:layout_width="match_parent"
+        android:layout_height="374dp"
+        android:layout_weight="0.81" >
+    </ListView>
+
+    <Button
+        android:id="@+id/btn_enviar"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:background="@anim/btn_ingresar"
+        android:text="Enviar"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold" />
+
+</LinearLayout>

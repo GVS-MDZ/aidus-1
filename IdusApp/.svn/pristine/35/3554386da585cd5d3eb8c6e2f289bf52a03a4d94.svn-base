@@ -1,0 +1,88 @@
+package com.gvs.idusapp;
+
+import java.util.List;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.gvs.busquedas.BusquedaClientes;
+import com.gvs.busquedas.BusquedaUsuario;
+import com.gvs.entidades.Client;
+import android.app.Activity;
+import android.content.Intent;
+import android.location.Location;
+import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.widget.Toast;
+
+public class ClientMapActivity extends Activity {
+	private GoogleMap mMap;
+	private Bundle bun;
+	private int dia,vendedor;
+	private BusquedaUsuario controladorUsuario;
+	private List<Client>lista_cliente;
+	private BusquedaClientes busquedaCliente;
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_client_map);
+		try{
+			bun = getIntent().getExtras();
+			busquedaCliente=new BusquedaClientes(this);
+			controladorUsuario = new BusquedaUsuario();
+			dia = bun.getInt("DIA");
+			vendedor = bun.getInt("VENDEDOR");
+			lista_cliente=busquedaCliente.buscarClientesLocalizados(dia, vendedor);	
+			if(lista_cliente!=null){
+				for(Client item:lista_cliente){
+					double lat = item.getLatitud();
+					double lng =item.getLongitud();
+					String nombre=item.getName();
+					String direccion=item.getAddress();
+					Location location = new Location("");
+					location.setLatitude(lat);
+					location.setLongitude(lng);		  
+					LatLng newLatLng = new LatLng(location.getLatitude(), location.getLongitude());
+					mMap = ((MapFragment)getFragmentManager().findFragmentById(R.id.map)).getMap();
+					mMap.addMarker(new MarkerOptions().position(newLatLng).title(nombre+"("+direccion+")"));	
+				    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 14.0f));
+				}	
+			}else{
+				Toast toast = Toast.makeText(getApplicationContext(),"No existen clientes con gps", Toast.LENGTH_SHORT);
+				toast.show();
+				finish();
+			}
+		}catch(Exception ex){
+			Toast toast = Toast.makeText(getApplicationContext(),"Bug en la localizacion de gps", Toast.LENGTH_SHORT);
+			toast.show();
+			finish();
+		}
+	}
+	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.client_map, menu);
+		return true;
+	}
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		int id = item.getItemId();
+		if(id == R.id.cerrar_sesion){
+			startActivity(new Intent(getBaseContext(), MainActivity.class)
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
+			controladorUsuario.cerrarSesion(this);
+			finish();
+		}else if(id == R.id.sincronizar){
+			Intent i = new Intent(this, SyncActivity.class);
+			bun.putString("SINCRONIZACION","GENERAL");
+			i.putExtras(bun);
+			startActivity(i);
+		}
+		return super.onOptionsItemSelected(item);
+	}
+
+}

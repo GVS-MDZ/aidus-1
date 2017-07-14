@@ -1,0 +1,201 @@
+package com.gvs.utilidades;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Formatter;
+import android.annotation.SuppressLint;
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import com.gvs.entidades.Configuracion;
+
+@SuppressLint("SimpleDateFormat")
+public class Funciones {
+	private Formatter formato;
+	private SimpleDateFormat df;
+	
+	public void MostrarMensajeAceptar(Context cont, String tittle, String message) {
+		AlertDialog.Builder mensaje = new AlertDialog.Builder(cont);
+		mensaje.setTitle(tittle);
+		mensaje.setMessage(message);
+		mensaje.setPositiveButton("Aceptar", new OnClickListener() {
+
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				// TODO Auto-generated method stub
+				return;
+			}
+		});
+		mensaje.show();
+	}
+
+	public String BaseDeDatos() {
+		return "aidus.db";
+	}
+
+	public int Version() {
+		return 1;
+	}
+
+	public Configuracion devolverConfiguracion(Context cont) {
+		BaseDeDatos baseDeDatos = new BaseDeDatos(cont, BaseDeDatos(), null,Version());
+		final SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+
+		Configuracion configuracion = new Configuracion();
+		String sql = "SELECT * FROM CONFIGURACION";
+		Cursor cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			configuracion.setNombreSrv(cur.getString(cur.getColumnIndex("NOMBRESRV")));
+			configuracion.setPuerto(Integer.parseInt(cur.getString(cur.getColumnIndex("PUERTO"))));
+			configuracion.setCantidadItems(Integer.parseInt(cur.getString(cur.getColumnIndex("CANTIDADITEMS"))));
+			configuracion.setDiaCompleto(cur.getInt(cur.getColumnIndex("DIACOMPLETO")));
+			configuracion.setMuestraSugeridos(cur.getInt(cur.getColumnIndex("MUESTRASUGERIDOS")));
+			configuracion.setServicioGeo(cur.getInt(cur.getColumnIndex("SERVICIOGEO")));
+			configuracion.setOtroDia(cur.getInt(cur.getColumnIndex("OTRODIA")));
+			configuracion.setDescuento(cur.getInt(cur.getColumnIndex("DESCUENTO")));
+		} else {
+			configuracion = null;
+		}
+
+		return configuracion;
+	}
+
+	public String dateToString_ddmmyyyy_hhmm(long date) {
+		Calendar c = Calendar.getInstance();
+		c.setTime(new Date(date));
+		int y = c.get(Calendar.YEAR);
+		int m = c.get(Calendar.MONTH) + 1;
+		int d = c.get(Calendar.DATE);
+		int h = c.get(Calendar.HOUR_OF_DAY);
+		int n = c.get(Calendar.MINUTE);
+		String t = (d < 10 ? "0" : "") + d + "/" + (m < 10 ? "0" : "") + m
+				+ "/" + (y < 10 ? "0" : "") + y + " " + (h < 10 ? "0" : "") + h
+				+ ":" + (n < 10 ? "0" : "") + n;
+		return t;
+	}
+
+	public String dateToString_ddmmyyyy(long date) {
+		Calendar c = Calendar.getInstance();
+		c.setTime(new Date(date));
+		int y = c.get(Calendar.YEAR);
+		int m = c.get(Calendar.MONTH) + 1;
+		int d = c.get(Calendar.DATE);
+		String t = (d < 10 ? "0" : "") + d + "/" + (m < 10 ? "0" : "") + m
+				+ "/" + (y < 10 ? "0" : "") + y;
+		return t;
+	}
+
+	public String dateToString_dd_mm_yyyy(long date) {
+		Calendar c = Calendar.getInstance();
+		c.setTime(new Date(date));
+		int y = c.get(Calendar.YEAR);
+		int m = c.get(Calendar.MONTH) + 1;
+		int d = c.get(Calendar.DATE);
+		String t = (d < 10 ? "0" : "") + d + "-" + (m < 10 ? "0" : "") + m
+				+ "-" + (y < 10 ? "0" : "") + y;
+		return t;
+	}
+
+	public String dateToString_yyyymmdd(long date) {
+		Calendar c = Calendar.getInstance();
+		c.setTime(new Date(date));
+		int y = c.get(Calendar.YEAR);
+		int m = c.get(Calendar.MONTH) + 1;
+		int d = c.get(Calendar.DATE);
+		String t = (y < 10 ? "0" : "") + y + "/" + (m < 10 ? "0" : "") + m
+				+ "/" + (d < 10 ? "0" : "") + d;
+		return t;
+	}
+
+	public String dateToString_yyyymmdd_hhmm(long date) {
+		Date fecha=new Date(date);
+		SimpleDateFormat format=new SimpleDateFormat("dd/MM/yyyy");
+		String fecha_string=format.format(fecha);
+		return fecha_string;
+	}
+	
+	public String dateToString_yyyymmdd_hhmm2(long date) {
+		Calendar c = Calendar.getInstance();
+		c.setTime(new Date(date));
+		int y = c.get(Calendar.YEAR);
+		int m = c.get(Calendar.MONTH) + 1;
+		int d = c.get(Calendar.DATE);
+		int h = c.get(Calendar.HOUR_OF_DAY);
+		int n = c.get(Calendar.MINUTE);
+		String t = (y < 10 ? "0" : "") + y + "/" + (m < 10 ? "0" : "") + m
+				+ "/" + (d < 10 ? "0" : "") + d + " " + (h < 10 ? "0" : "") + h
+				+ ":" + (n < 10 ? "0" : "") + n;
+		return t;
+	}
+	//periodo
+	public String dateToString_MMYYYY(long date) {
+		Calendar c = Calendar.getInstance();
+		c.setTime(new Date(date));
+		int y = c.get(Calendar.YEAR);
+		int m = c.get(Calendar.MONTH) + 1;
+		String t = (m < 10 ? "0" : "") + m + "/" + (y < 10 ? "0" : "") + y;
+		return t;
+	}
+
+	public Date stringToDate(String dateYYYYMMDD) throws ParseException {
+		 df = new SimpleDateFormat("yyyy/MM/dd");
+		Date d = df.parse(dateYYYYMMDD);
+		return d;
+	}
+
+	@SuppressLint("SimpleDateFormat")
+	public Date _stringToDate(String dateYYYYMMDD) throws ParseException {
+		 df = new SimpleDateFormat("dd-MM-yyyy");
+		Date d = df.parse(dateYYYYMMDD);
+		return d;
+	}
+
+	public int optenerNumeroDiaActual() {
+		Calendar calendario = Calendar.getInstance();
+		int diaSemana = calendario.get(7) - 1;
+		return diaSemana;
+	}
+
+	public String format(int numero, int cantidadDeCerosIzq) {
+		formato=new Formatter();
+		String cadena = String.valueOf(numero);
+		cadena =formato.format("%0" + cantidadDeCerosIzq + "d", numero).toString();
+		return cadena;
+	}
+
+	public String format(Long numero, int cantidadDeCerosIzq) {
+		formato=new Formatter();
+		String cadena = String.valueOf(numero);
+		cadena = formato.format("%0" + cantidadDeCerosIzq + "d", numero).toString();
+		return cadena;
+	}
+
+	public String formatDecimal(double numero, int cantidadDecimales) {
+		formato=new Formatter();
+		String cadena = String.valueOf(numero);
+		cadena = formato.format("%." + cantidadDecimales + "f", numero).toString();
+		return cadena.replace(",", ".");
+	}
+
+	public String formatDecimal(Float numero, int cantidadDecimales) {
+		formato=new Formatter();
+		String cadena = String.valueOf(numero);
+		cadena =formato.format("%." + cantidadDecimales + "f", numero).toString();
+		return cadena.replace(",", ".");
+	}
+	
+   public String autocompletarNumero(String numero,int length_text) {
+	    int amountNumber =numero.length();
+	    String j = "";
+	    for (int i = 0; i < length_text - amountNumber; i++) {
+	         j = j + "0";
+	    }
+	    numero = j + numero;
+	   return numero;
+	 }
+}

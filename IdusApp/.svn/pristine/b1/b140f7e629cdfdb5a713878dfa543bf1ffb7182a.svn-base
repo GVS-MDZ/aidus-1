@@ -1,0 +1,163 @@
+package com.gvs.busquedas;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Vector;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.SQLException;
+import android.database.sqlite.SQLiteDatabase;
+
+import com.gvs.entidades.Motivo;
+import com.gvs.entidades.NoAtendido;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+
+public class BusquedaNoAtendidos {
+	private Context conte;
+	private Funciones funcion=new Funciones();
+	
+	public BusquedaNoAtendidos(Context cont) {
+		conte=cont;		
+	}
+	
+	public void grabarNoAtendido(NoAtendido noatendido) throws Exception{
+
+		try {
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			String Sql = "";
+			Cursor cur;
+			
+			Sql = "SELECT * FROM NOATENDIDOS WHERE CODIGOCLIENTE=" + noatendido.getCodigoCliente() + " AND FECHA=" + noatendido.getFecha();
+			cur = db.rawQuery(Sql, null);
+			ContentValues conMotivos = new ContentValues();
+			if (cur.moveToNext()) {	
+				conMotivos.put("CODIGOCLIENTE", noatendido.getCodigoCliente());
+				conMotivos.put("CODIGOVENDEDOR", noatendido.getCodigoVendedor());
+				conMotivos.put("FECHA",noatendido.getFecha());
+				conMotivos.put("CODIGOMOTIVO", noatendido.getCodigoMotivo());
+				conMotivos.put("LATITUD", noatendido.getLatitud());
+				conMotivos.put("LONGITUD", noatendido.getLongitud());
+				conMotivos.put("PRECISION", noatendido.getPresicion());
+				conMotivos.put("PROVEE", noatendido.getProveedor());
+				conMotivos.put("ESTADO", 0);
+				db.update("NOATENDIDOS", conMotivos, "CODIGOCLIENTE=" + conMotivos.getAsInteger("CODIGOCLIENTE") + " AND FECHA=" + conMotivos.getAsLong("FECHA"), null);
+			} else {
+				conMotivos.put("CODIGOCLIENTE", noatendido.getCodigoCliente());
+				conMotivos.put("CODIGOVENDEDOR", noatendido.getCodigoVendedor());
+				conMotivos.put("FECHA",noatendido.getFecha());
+				conMotivos.put("CODIGOMOTIVO", noatendido.getCodigoMotivo());
+				conMotivos.put("LATITUD", noatendido.getLatitud());
+				conMotivos.put("LONGITUD", noatendido.getLongitud());
+				conMotivos.put("PRECISION", noatendido.getPresicion());
+				conMotivos.put("PROVEE", noatendido.getProveedor());
+				conMotivos.put("ESTADO", 0);
+				db.insert("NOATENDIDOS", null, conMotivos);
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw new Exception(ex.getMessage());
+		}
+	}
+	
+	public boolean marcarParaEnviar() throws Exception{
+		try {
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			String Sql=""; 
+			Sql = "UPDATE NOATENDIDOS SET ESTADO=11 WHERE ESTADO=0";
+			db.execSQL(Sql);
+			return true;
+		} catch (SQLException e) {
+			e.printStackTrace();
+			throw new Exception("ERROR:Al intentar marcar el no atendidos para ser enviados. " +
+					"Pongase en contacto con la mesa de ayuda. Error: " + e.getMessage());
+		}
+	}
+	
+	public List<NoAtendido> buscarNoAtendidosParaEnviar() throws Exception{
+		try {
+			Vector<NoAtendido> noAtendidos = new Vector<NoAtendido>();
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			String Sql = "SELECT * FROM NOATENDIDOS WHERE ESTADO=11";
+			Cursor cur = db.rawQuery(Sql, null);
+			if (cur.getColumnCount()>0){
+				while (cur.moveToNext()){
+					NoAtendido noAtendido = new NoAtendido();
+					noAtendido.setFecha(cur.getLong(cur.getColumnIndex("FECHA")));
+					noAtendido.setCodigoVendedor(cur.getInt(cur.getColumnIndex("CODIGOVENDEDOR")));
+					noAtendido.setCodigoCliente(cur.getInt(cur.getColumnIndex("CODIGOCLIENTE")));
+					noAtendido.setCodigoMotivo(cur.getInt(cur.getColumnIndex("CODIGOMOTIVO")));
+					noAtendido.setLatitud(cur.getDouble(cur.getColumnIndex("LATITUD")));
+					noAtendido.setLongitud(cur.getDouble(cur.getColumnIndex("LONGITUD")));
+					noAtendido.setPresicion(cur.getDouble(cur.getColumnIndex("PRECISION")));
+					noAtendido.setProveedor(cur.getString(cur.getColumnIndex("PROVEE")));
+					noAtendidos.add(noAtendido);
+				}
+			}
+			return noAtendidos;
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new Exception(e.getMessage());
+		}
+		
+	}
+	
+	public int buscarClienteNoAtendido(int codigoCliente){		
+		try {
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		Cursor cur = null;
+		int cantidad=0;
+			Date fecha = new Date();
+			String hoyTexto = funcion.dateToString_yyyymmdd(fecha.getTime());
+			Date fechaINI = funcion.stringToDate(hoyTexto);
+			String Sql = "SELECT * FROM NOATENDIDOS " +
+					"WHERE CODIGOCLIENTE=" + codigoCliente+" AND FECHA>="+fechaINI.getTime();
+			cur = db.rawQuery(Sql, null);
+				while (cur.moveToNext()){
+					cantidad++;
+				}		
+			return cantidad;			
+		} catch (Exception e) {
+			return 0;
+		}
+	}
+
+	
+	public List<Motivo> buscarMotivosNoVenta()throws Exception{
+		try{
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte,funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			String Sql = "SELECT * FROM MOTIVOS ORDER BY NOMBRE";
+			Cursor cur = db.rawQuery(Sql, null);
+			List<Motivo> lista=null;
+			if (cur.getCount() > 0) {
+			    lista=new ArrayList<Motivo>();
+				Motivo motivo=null;
+				while (cur.moveToNext()) {
+					motivo=new Motivo();
+					motivo.setCodigo(cur.getInt(cur.getColumnIndex("CODIGO")));
+					motivo.setNombre(cur.getString(cur.getColumnIndex("NOMBRE")));
+					lista.add(motivo);
+				}
+			}
+			return lista;
+		}catch(Exception ex){
+			throw new Exception(ex.getMessage());
+		}
+		
+		}
+	
+	public void modificarNoAtendidoConector(NoAtendido noAtendido){
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		String Sql = "UPDATE NOATENDIDOS SET ESTADO=1 WHERE FECHA=" + noAtendido.getFecha();
+		db.execSQL(Sql);
+	}
+}

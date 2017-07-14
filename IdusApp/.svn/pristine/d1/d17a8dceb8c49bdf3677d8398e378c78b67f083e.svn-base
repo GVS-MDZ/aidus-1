@@ -1,0 +1,55 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#ffffff"
+    android:orientation="vertical" >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+ 
+        android:gravity="center" >
+
+        <RadioGroup
+            android:id="@+id/radio_tipo_texto"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="5dp"
+            android:layout_marginTop="5dp"
+            android:gravity="center"
+            android:orientation="horizontal" >
+
+            <RadioButton
+                android:id="@+id/radio_tipo_numerico"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="Nombre"
+                android:textStyle="bold" />
+
+            <RadioButton
+                android:id="@+id/radio_tipo_alfa"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Direccion"
+                android:textStyle="bold" />
+
+            <RadioButton
+                android:id="@+id/radio_detalle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Visita"
+                android:textStyle="bold" />
+        </RadioGroup>
+    </LinearLayout>
+ <View
+        android:layout_width="fill_parent"
+        android:layout_height="2dp"
+        android:background="#008B8B" />
+    <ListView
+        android:id="@+id/lista_clientes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" >
+    </ListView>
+
+</LinearLayout>

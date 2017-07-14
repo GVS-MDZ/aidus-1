@@ -1,0 +1,60 @@
+package com.gvs.conectoras;
+
+import java.io.DataInputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
+import android.content.Context;
+//import android.util.Log;
+
+import com.gvs.entidades.Configuracion;
+import com.gvs.utilidades.Funciones;
+
+public abstract class ConectorGeneral {
+
+	protected Configuracion configuracion;
+	private Funciones funcion;
+	
+	protected ConectorGeneral(Configuracion conf){
+		configuracion=conf;
+	}
+	
+	public boolean correr(Context PantallaOriginal) throws Exception {
+		URL url=null;
+		HttpURLConnection urlConection=null;
+		try{
+			
+			funcion=new Funciones();
+			//String urlCompleto= "http://192.168.0.140:8080/serverSiDisGo-war/";
+			String urlCompleto= "http://gvs-mdz.dyndns.org:8080/serverSiDisGo-war/";
+			//String urlCompleto= "http://" + configuracion.getNombreSrv() + ":" + configuracion.getPuerto() + "/serverSiDisGo-war/";
+			urlCompleto = urlCompleto + CompletarURL();
+			urlCompleto = funcion.replace(urlCompleto, " ", "");
+			urlCompleto = funcion.replace(urlCompleto, "{", "(");
+			urlCompleto = funcion.replace(urlCompleto, "}", ")");
+			urlCompleto = funcion.replace(urlCompleto, ">", " ");
+			urlCompleto = funcion.replace(urlCompleto, "<", " ");
+			urlCompleto = funcion.replace(urlCompleto, "^", " ");
+			urlCompleto = funcion.replace(urlCompleto, "°", "g");
+			urlCompleto = funcion.replace(urlCompleto, "#", "N");
+			url = new URL(urlCompleto);
+			urlConection = (HttpURLConnection) url.openConnection();			 
+			urlConection.setConnectTimeout(20000);
+			if (urlConection.getResponseCode()==200){
+				procesarRespuesta(new DataInputStream(urlConection.getInputStream()));
+				return true;
+			} else {
+				throw new Exception("Respuesta 500 del servidor");
+			}
+	
+		} catch (Exception e) {
+			throw new Exception(e.getMessage());
+		} finally {
+			urlConection.disconnect();
+		}
+	}
+	
+	protected abstract String CompletarURL() throws Exception;
+	
+	protected abstract void procesarRespuesta(DataInputStream in) throws Exception;
+}

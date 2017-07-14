@@ -1,0 +1,98 @@
+package com.gvs.conectoras;
+
+import java.io.DataInputStream;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import com.gvs.entidades.Configuracion;
+import com.gvs.entidades.ObjXVisita;
+import com.gvs.exceptiones.ConectorException;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+
+public class ConectorObjXVisita extends ConectorGeneral {
+
+	private int pEmpresa;
+	private int pVendedor;
+	private Context pConte;
+	
+	public ConectorObjXVisita(Configuracion conf, int empresa, int vendedor,Context conte) {
+		super(conf);
+		pEmpresa=empresa;
+		pVendedor=vendedor;
+		pConte=conte;
+	}
+	
+	@Override
+	protected String CompletarURL() throws ConectorException {
+		// TODO Auto-generated method stub
+		return "enviarObjXVisitasXVendedor?empresa=" + pEmpresa + "&vendedor="+ pVendedor;
+	}
+
+	@Override
+	protected void procesarRespuesta(DataInputStream in)
+			throws ConectorException {
+		// TODO Auto-generated method stub
+		int tipoActualizacion=0;
+		boolean yaBorre=false;
+		Funciones funcion = new Funciones();
+		BaseDeDatos baseDeDatos = new BaseDeDatos(pConte, funcion.BaseDeDatos(), null, funcion.Version());
+		final SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		ContentValues cont = new ContentValues();
+		Cursor cur;
+		try {
+			while (true){
+				tipoActualizacion=in.readInt();
+				if (tipoActualizacion==1199){
+					break;
+				}
+				switch (tipoActualizacion) {
+				case 1101:
+					if (yaBorre==false){
+						String sqlB = "DELETE FROM OBJXVISITA";
+						db.execSQL(sqlB);
+						yaBorre=true;
+					}
+					ObjXVisita objetivo = new ObjXVisita();
+					objetivo.setCodigoCliente(in.readInt());
+					objetivo.setPeriodo(in.readUTF());
+					objetivo.setVentaAnterior(in.readDouble());
+					objetivo.setObjetivoActual(in.readDouble());
+					objetivo.setCantidadDeVisitas(in.readInt());
+					objetivo.setVentaActual(in.readDouble());
+					objetivo.setFechaActualizacion(in.readLong());
+					objetivo.setPorcentaje(in.readDouble());
+					
+					cont.clear();
+					cont.put("CODIGOCLIENTE", objetivo.getCodigoCliente());
+					cont.put("PERIODO", objetivo.getPeriodo());
+					cont.put("VTA_ANT", objetivo.getVentaAnterior());
+					cont.put("OBJ_ACT", objetivo.getObjetivoActual());
+					cont.put("CAN_VIS", objetivo.getCantidadDeVisitas());
+					cont.put("VTA_ACT", objetivo.getVentaActual());
+					cont.put("FEC_ACT", objetivo.getFechaActualizacion());
+					cont.put("PORC", objetivo.getPorcentaje());
+					
+					String Sql = "SELECT * FROM OBJXVISITA WHERE CODIGOCLIENTE=" + objetivo.getCodigoCliente() + " AND PERIODO='" + objetivo.getPeriodo() + "'";
+					cur = db.rawQuery(Sql, null);
+					if (cur.moveToNext()) {
+						db.update("OBJXVISITA", cont, "CODIGOCLIENTE="+ objetivo.getCodigoCliente() + " AND PERIODO='" + objetivo.getPeriodo()+"'", null);
+					} else {
+						db.insert("OBJXVISITA", null, cont);
+					}
+					if (cur!=null) {
+						cur.close();
+					}
+				default:
+					break;
+				}
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw new ConectorException(ex.getMessage());
+		}
+	}
+
+}

@@ -1,0 +1,13 @@
+package com.gvs.exceptiones;
+
+public class ExceptionSincronizador extends Exception {
+	private static final long serialVersionUID = 1L;
+
+	public ExceptionSincronizador() {
+
+	}
+
+	public ExceptionSincronizador(String msg) {
+		super(msg);
+	}
+}

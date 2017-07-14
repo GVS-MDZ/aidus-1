@@ -1,0 +1,426 @@
+package com.gvs.conectoras;
+
+import java.io.DataInputStream;
+import java.util.ArrayList;
+import java.util.Date;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.util.Log;
+
+import com.gvs.entidades.Configuracion;
+import com.gvs.busquedas.BusquedaActualizacion;
+import com.gvs.utilidades.Funciones;
+
+public class ConectorActualizacion extends ConectorGeneral {
+
+	private int empresa;
+	private int vendedor;
+	private Context conte;
+	private String tipo;
+	private BusquedaActualizacion busquedaActualizacion;
+	private Funciones funcion ;
+	private boolean yaBorreComprobantesValidacion = false;
+	private ContentValues cont;
+	private String[] lista;
+	
+	public ConectorActualizacion(Configuracion conf, int empresa, int vendedor,String tipo,Context context) {
+		super(conf);
+		this.empresa = empresa;
+		this.vendedor = vendedor;
+		this.conte = context;
+		this.tipo=tipo;
+	}
+
+	@Override
+	protected String CompletarURL() {
+		if(tipo.equals("ACTUALIZACIONGENERAL")){
+			return "buscarActualizaciones2?empresa=" + empresa + "&vendedor="+ vendedor;
+		}else{
+			//return "buscarNuevasActualizaciones?empresa=" + empresa + "&vendedor="+ vendedor;
+			return "buscarActualizaciones3?empresa=" + empresa + "&vendedor="+ vendedor;
+		}
+	}
+
+	@Override
+	protected void procesarRespuesta(DataInputStream in)throws Exception {
+		int tipoActualizacion = 0;
+		String[] item;
+		boolean bucle = true;
+		busquedaActualizacion=new BusquedaActualizacion(conte);
+		funcion = new Funciones(conte);
+		cont=new ContentValues();
+		ArrayList<String> lista_actualizaciones = new ArrayList<String>();
+		try {
+			busquedaActualizacion.iniciarTransaccion();
+			while (bucle) {
+				try {
+					lista_actualizaciones.add(in.readUTF());
+				} catch (Exception e) {
+					bucle = false;
+				}
+			}
+			in.close();
+			if(tipo.equals("ACTUALIZACIONGENERAL")){
+				busquedaActualizacion.eliminarCliente();
+				busquedaActualizacion.eliminarArticulo();
+				busquedaActualizacion.eliminarVisitas();
+				busquedaActualizacion.eliminarArticuloImpresindible();
+				busquedaActualizacion.eliminarArticuloLanzamiento();
+				busquedaActualizacion.eliminarObjetivos();
+				busquedaActualizacion.eliminarVentas();
+				busquedaActualizacion.eliminarEncuestas();
+				busquedaActualizacion.eliminarComprobantes();
+			}
+			int cont=0;
+			int conterror=0;
+			for (String item_actualizacion : lista_actualizaciones) {
+				cont++;
+				try {
+					item= item_actualizacion.split("&&");
+					tipoActualizacion = Integer.parseInt(item[0]);
+					lista = item[1].split(";");	
+					switch (tipoActualizacion) {
+					case 1001:
+						Log.e("VENDEDOR","VENDEDOR "+cont);
+						guardarVendedor(lista);
+						break;
+					case 1002:
+						Log.e("LISTAPRECIO","LISTAPRECIO "+cont);
+						guardarListaPrecio(lista);
+						break;
+					case 1003:
+						Log.e("CLIENTE","CLIENTE "+cont);//
+						guardarCliente(lista);
+						break;
+					case 1004:	
+						Log.e("VISITA","VISITA "+cont);//
+						guardarVisita(lista);
+						break;
+					case 1005:
+						Log.e("RUBRO","RUBRO "+cont);
+						guardarRubro(lista);
+						break;
+					case 1006:
+						Log.e("SUBRUBRO","SUBRUBRO "+cont);
+						guardarSubrubro(lista);
+						break;
+					case 1007:
+						guardarArticulo(lista);
+						Log.e("ARTICULO","ARTICULO "+cont);//
+						break;
+					case 1008:
+						Log.e("MOTIVO","MOTIVO "+cont);
+						guardarMotivo(lista);
+						break;
+					case 1009:
+						Log.e("SUGERIDO","SUGERIDO "+cont);
+						guardarSugerido(lista);
+						break;
+					case 1010:
+						Log.e("CONFIGURACION","CONFIGURACION "+cont);
+						guardarConfiguracion(lista);
+						break;
+					case 1011:
+						Log.e("PEDIDO","PEDIDO "+cont);
+						guardarPedidos(lista);
+						break;
+					case 1012:
+						Log.e("IMPRES","IMPRES "+cont);//
+						guardarImprescindibles(lista);
+						break;
+					case 1013:
+						Log.e("LANZAMIENTO","LANZAMIENTO "+cont);//
+						guardarLanzamientos(lista);
+						break;
+					case 1014:
+						Log.e("OBJETIVO","OBJETIVO "+cont);//
+						guardarObjetivo(lista);
+						break;
+					case 1015:
+						Log.e("VENTAS","VENTAS "+cont);//
+						guardarVentas(lista);
+						break;
+					case 1016:
+						Log.e("ENCUESTAS","ENCUESTAS "+cont);//
+						guardarEncuestas(lista);
+						break;
+					case 1017:
+						Log.e("ITEMENCUESTA","ITEMENCUESTA "+cont);
+						guardarItemEncuesta(lista);		
+						break;
+					case 1018:
+						Log.e("COMPROBANTE","COMPROBANTE "+cont);//
+						guardarComprobantes(lista);
+						break;
+					case 1019:
+						eliminarComprobantes();
+						break;
+					case 1020:
+						Log.e("COMBO","COMBO "+cont);
+						guardarCombo(lista);
+						break;
+					case 1099:
+						if(conterror==0){
+							guardarSincronizacion();
+						}
+						break;
+					default:
+						break;
+					}
+					
+				} catch (Exception ex) {
+					conterror++;
+					Log.e("ERROR","------------------------------------- "+conterror);
+					continue;
+				}
+			}
+			busquedaActualizacion.transaccionCorrectamente();
+		} catch (Exception e) {
+		   throw new Exception(e.getMessage());
+		} finally {
+			busquedaActualizacion.terminarTransaccion();
+		   in.close();
+		}
+	}
+
+	private void guardarVendedor(String[] lista){
+		cont.clear();		
+		cont.put("CODIGOEMPRESA", empresa);
+		cont.put("CODIGO", Integer.parseInt(lista[0]));
+		cont.put("NOMBRE", lista[1]);
+		cont.put("PASS",lista[2]);
+		cont.put("COBREGULAR", Integer.parseInt(lista[3]));
+		cont.put("COBBUENA", Integer.parseInt(lista[4]));
+		cont.put("COBMUYBUENA", Integer.parseInt(lista[5]));
+		busquedaActualizacion.guardarVendedor(cont);
+	}
+	
+	private void guardarListaPrecio(String[] lista){
+		cont.clear();
+		cont.put("CODIGO",Integer.parseInt(lista[0]));
+		cont.put("CODIGORUBRO", Integer.parseInt(lista[1]));
+		cont.put("CODIGOSUBRUBRO",Integer.parseInt(lista[2]));
+		cont.put("CODIGOARTICULO",lista[3]);
+		cont.put("PORCENTAJE",Double.parseDouble(lista[4]));
+		cont.put("HAB", funcion.devolverBoolean(Boolean.parseBoolean(lista[5])));	
+		busquedaActualizacion.guardarListaPrecio(cont);
+	}
+	
+	private void guardarCliente(String[] lista){
+		cont.clear();
+		cont.put("CODIGO", Integer.parseInt(lista[0]));
+		cont.put("NOMBRE", lista[1]);
+		cont.put("DOMICILIO", lista[2]);
+		cont.put("TELEFONO",lista[3]);
+		cont.put("PROVINCIA", lista[4]);
+		cont.put("LOCALIDAD", lista[5]);
+		cont.put("OBSERVACIONES", lista[6]);
+		cont.put("CODIGOLISTAPRECIO",Integer.parseInt(lista[7]));
+		cont.put("SALDO", Double.parseDouble(lista[8]));
+		cont.put("CODIGOVENDEDOR", this.vendedor);
+		cont.put("HAB",funcion.devolverBoolean(Boolean.parseBoolean(lista[9])));
+		cont.put("CANAL", lista[10]);					
+		cont.put("RESPONSABILIDAD", lista[11]);
+		cont.put("LATITUD", Double.parseDouble(lista[12]));
+		cont.put("LONGITUD",Double.parseDouble(lista[13]));
+		cont.put("HABILITARGPS", Integer.parseInt(lista[14]));
+		cont.put("EDITADO",0);
+		busquedaActualizacion.guardarCliente(cont);
+	}
+
+	private void guardarVisita(String[] lista){
+		cont.clear();
+		cont.put("DIAS",lista[0]);
+		cont.put("HORA",lista[1]);
+		cont.put("ORDEN",Integer.parseInt(lista[2]));
+		cont.put("CODIGOCLIENTE",Integer.parseInt(lista[3]));
+		busquedaActualizacion.guardarVisita(cont);
+	}
+	
+	private void guardarRubro(String[] lista){
+		cont.clear();
+		cont.put("CODIGO",Integer.parseInt(lista[0]));
+		cont.put("NOMBRE",lista[1]);
+		cont.put("HAB", funcion.devolverBoolean(Boolean.parseBoolean(lista[2])));
+		busquedaActualizacion.guardarRubro(cont);
+	}
+	
+	private void guardarSubrubro(String[] lista ){
+		cont.clear();
+		cont.put("CODIGORUBRO", Integer.parseInt(lista[0]));
+		cont.put("CODIGO",Integer.parseInt(lista[1]));
+		cont.put("NOMBRE", lista[2]);
+		cont.put("CONTROLASTOCK", funcion.devolverBoolean(Boolean.parseBoolean(lista[3])));
+		cont.put("HAB",funcion.devolverBoolean(Boolean.parseBoolean(lista[4])));
+		busquedaActualizacion.guardarSubrubro(cont);
+	}
+	
+	private void guardarArticulo(String[] lista){
+		cont.clear();
+		cont.put("CODIGO", lista[0]);
+		cont.put("CODIGORUBRO", Integer.parseInt(lista[1]));
+		cont.put("CODIGOSUBRUBRO",Integer.parseInt(lista[2]));
+		cont.put("NOMBRE",lista[3]);
+		cont.put("PRECIO",Double.parseDouble(lista[4]));
+		cont.put("EXISTENCIA",Double.parseDouble(lista[5]));
+		cont.put("HAB", funcion.devolverBoolean(Boolean.parseBoolean(lista[6])));
+		cont.put("MULTIPLO",Integer.parseInt(lista[7]));
+		cont.put("PRECIOOFERTA",Double.parseDouble(lista[8]));
+		busquedaActualizacion.guardarArticulo(cont);
+	}
+	
+	private void guardarMotivo(String[] lista){
+		cont.clear();
+		cont.put("CODIGO",Integer.parseInt(lista[0]));
+		cont.put("NOMBRE",lista[1]);
+		busquedaActualizacion.guardarMotivo(cont);
+	}
+	
+	private void guardarSugerido(String[] lista){
+		cont.clear();
+		cont.put("ORDEN",Integer.parseInt(lista[0]));
+		cont.put("CODIGOARTICULO", lista[1]);
+		cont.put("MENSAJE", lista[2]);
+		cont.put("VENCIMIENTO", Long.parseLong(lista[3]));
+		cont.put("EXIGIBLE", funcion.devolverBoolean(Boolean.parseBoolean(lista[4])));
+		busquedaActualizacion.guardarSugerido(cont);
+	}
+	
+	private void guardarConfiguracion(String[] lista){
+		int cantidadItems = Integer.parseInt(lista[0]);
+		if (cantidadItems == 0) {cantidadItems = 25;}
+		cont = new ContentValues();
+		cont.put("PUERTO", 8080);
+		cont.put("CANTIDADITEMS", cantidadItems);
+		cont.put("DIACOMPLETO", Integer.parseInt(lista[1]));
+		cont.put("MUESTRASUGERIDOS", Integer.parseInt(lista[2]));
+		cont.put("OTRODIA", Integer.parseInt(lista[3]));
+		cont.put("DESCUENTO", Integer.parseInt(lista[4]));
+		cont.put("SERVICIOGEO", Integer.parseInt(lista[5]));
+		busquedaActualizacion.modificarConfiguracion(cont);
+	}
+	
+	private void guardarPedidos(String[] lista){
+		cont.clear();
+		cont.put("NUMERO", lista[0]);
+		cont.put("NUMEROFINAL", "0");
+		cont.put("FECHA", "0");
+		cont.put("AVANCE",0);
+		cont.put("CODIGOCLIENTE", -1);
+		cont.put("CODIGOVENDEDOR", 0);
+		cont.put("CANTIDADITEMS", "0");
+		cont.put("ESTADO", 0);
+		cont.put("FECHAENVIADO",0);
+		cont.put("LATITUD", "0");
+		cont.put("LONGITUD","0");
+		cont.put("PRECISION", "0");
+		cont.put("PROVEE","");
+		cont.put("INTERNET",funcion.estadoRedes());
+		busquedaActualizacion.guardarPedido(cont);
+	}
+		
+	private void guardarImprescindibles(String[] lista){
+		if (Double.parseDouble(lista[3]) < Double.parseDouble(lista[2])) {
+			cont.clear();
+			cont.put("CODIGOCLIENTE",Integer.parseInt(lista[0]));
+			cont.put("CODIGOARTICULO", lista[1]);
+			cont.put("CANTIDADOBJ",Double.parseDouble(lista[2]));
+			cont.put("CANTIDADVTA",Double.parseDouble(lista[3]));
+			cont.put("ACTUALIZACION", new Date().getTime());
+			busquedaActualizacion.guardarImpresindible(cont);
+		}	
+	}
+	
+	private void guardarLanzamientos(String[] lista){
+		if (Double.parseDouble(lista[3]) < Double.parseDouble(lista[2])) {
+			cont.clear();
+			cont.put("CODIGOCLIENTE",Integer.parseInt(lista[0]));
+			cont.put("CODIGOARTICULO",lista[1]);
+			cont.put("CANTIDADOBJ",Double.parseDouble(lista[2]));
+			cont.put("CANTIDADVTA",Double.parseDouble(lista[3]));
+			cont.put("ACTUALIZACION",new Date().getTime());	
+		    busquedaActualizacion.guardarLanzamiento(cont);
+		}
+	}
+	
+	private void guardarObjetivo(String[] lista){
+		cont.clear();
+		cont.put("CODIGOCLIENTE",Integer.parseInt(lista[0]));
+		cont.put("PERIODO",lista[1]);
+		cont.put("VTA_ANT",Double.parseDouble(lista[2]));
+		cont.put("OBJ_ACT", Double.parseDouble(lista[3]));
+		cont.put("CAN_VIS", Integer.parseInt(lista[4]));
+		cont.put("VTA_ACT", Double.parseDouble(lista[5]));
+		cont.put("FEC_ACT",Long.parseLong(lista[6]));
+		cont.put("PORC", Double.parseDouble(lista[7]));
+		busquedaActualizacion.guardarObjetivoVisita(cont);
+	}
+	
+	private void guardarVentas(String[] lista){
+		cont.clear();
+		cont.put("PERIODO", lista[0]);
+		cont.put("DIA", Integer.parseInt(lista[1]));
+		cont.put("IMPORTE", Double.parseDouble(lista[2]));
+		cont.put("ACTUALIZACION",Long.parseLong(lista[3]));
+		busquedaActualizacion.guardarVentas(cont);
+	}
+	
+	private void guardarEncuestas(String[] lista){
+		cont.clear();
+		cont.put("NUMERO", Integer.parseInt(lista[0]));
+		cont.put("NOMBRE",lista[1]);
+		cont.put("FECHAINI",lista[2]);
+		cont.put("FECHAFIN",lista[3]);
+		cont.put("EXIGIBLE",funcion.devolverBoolean(Boolean.parseBoolean(lista[4])));
+		busquedaActualizacion.guardarEncuesta(cont);
+	}
+
+	private void guardarItemEncuesta(String[] lista){
+		cont.clear();
+		cont.put("NUMERO", Integer.parseInt(lista[0]));
+		cont.put("ITEM",Integer.parseInt(lista[1]));
+		cont.put("PREGUNTA",lista[2]);
+		cont.put("AYUDA",lista[3]);
+		busquedaActualizacion.guardarItemEncuesta(cont);	
+	}
+	
+	private void eliminarComprobantes(){
+		if (yaBorreComprobantesValidacion == false) {
+			busquedaActualizacion.eliminarComprobantes();
+			yaBorreComprobantesValidacion = true;
+		}
+	}
+	
+	private void guardarComprobantes(String[] lista){
+		cont.clear();
+		cont.put("TIPO",lista[0]);
+		cont.put("CLASE",lista[1]);
+		cont.put("SUCURSAL", Integer.parseInt(lista[2]));
+		cont.put("NUMERO", Integer.parseInt(lista[3]));
+		cont.put("FECHA",lista[4]);
+		cont.put("CODIGOCLIENTE",Integer.parseInt(lista[5]));
+		cont.put("SALDO", lista[6]);
+		busquedaActualizacion.guardarComprobante(cont);
+	}
+	
+	private void guardarCombo(String[] lista){	
+		cont.clear();
+		cont.put("CODIGO",Integer.parseInt(lista[0]));
+		cont.put("CANTIDAD", Integer.parseInt(lista[1]));
+		busquedaActualizacion.guardarCombo(cont);
+	}
+	
+	private void guardarSincronizacion(){
+		Date fechaInicio = new Date();
+		cont.clear();
+		cont.put("CODIGOEMPRESA", empresa);
+		cont.put("CODIGOVENDEDOR",this.vendedor);
+		cont.put("FECHAINICIO", fechaInicio.getTime());
+		cont.put("FECHA", fechaInicio.getTime());
+		cont.put("MODO", "T");
+		cont.put("INTERNET",funcion.estadoRedes());
+		cont.put("ESTADO", 0);
+		busquedaActualizacion.guardarSincronizacionTotal(cont);
+	}
+}

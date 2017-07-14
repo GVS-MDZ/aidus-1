@@ -1,0 +1,360 @@
+package com.gvs.busquedas;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import com.gvs.entidades.Articulos;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+public class BusquedaArticulos {
+	private Context conte;
+	private Funciones funcion = new Funciones();
+	
+	public BusquedaArticulos(Context cont){
+		conte=cont;
+	}
+	public BusquedaArticulos(){}
+	
+	public Articulos buscarPorCodigo(String codigo){
+		try {
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			
+			String Sql = "SELECT * FROM ARTICULOS WHERE CODIGO='" + codigo + "' AND HAB=1";
+			Cursor cur = db.rawQuery(Sql, null);
+			if (cur.moveToNext()){
+				Articulos art = new Articulos();
+				art.setCodigoIdus(cur.getString(cur.getColumnIndex("CODIGO")));
+				art.setDetalle(cur.getString(cur.getColumnIndex("NOMBRE")));
+				art.setPrecio(cur.getDouble(cur.getColumnIndex("PRECIO")));
+				art.setStock(cur.getDouble(cur.getColumnIndex("EXISTENCIA")));
+				art.setRubro(cur.getInt(cur.getColumnIndex("CODIGORUBRO")));
+				art.setSubRubro(cur.getInt(cur.getColumnIndex("CODIGOSUBRUBRO")));
+				art.setMultiplo(cur.getInt(cur.getColumnIndex("MULTIPLO")));
+				art.setOferta(cur.getDouble(cur.getColumnIndex("PRECIOOFERTA")));
+				return art;
+			} else {
+				return null;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			funcion.MostrarMensajeAceptar(conte, "ERROR AL BUSCAR ARTICULO", e.getMessage());
+			return null;
+		}
+	}
+	
+	public int buscarCombo(int codigo){
+			int cantidad= 0;
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();	
+			String Sql = "SELECT * FROM COMBOS WHERE CODIGO=" + codigo ;
+			Cursor cur = db.rawQuery(Sql, null);
+			if (cur.getCount()>0){
+				while(cur.moveToNext()){
+					cantidad= cur.getInt(cur.getColumnIndex("CANTIDAD"));
+			     }
+			} else {
+				cantidad=0;
+			}
+			return cantidad;
+	}
+	
+	public List<Map<String, String>> buscarProDetalle(String detalle){
+		try {
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			
+			String Sql = "SELECT * FROM ARTICULOS WHERE NOMBRE LIKE'%" + detalle + "%' AND HAB=1";
+			Cursor cur = db.rawQuery(Sql, null);
+			if (cur.getCount()>0){
+				List<Map<String, String>> list = new ArrayList <Map<String, String>>();
+				while (cur.moveToNext()){
+					Map<String, String> datum = new HashMap<String, String>();
+					datum.put("DATO05", cur.getString(cur.getColumnIndex("NOMBRE")));
+					datum.put("DATO06", cur.getString(cur.getColumnIndex("CODIGO")) + " - Stock: " + cur.getDouble(cur.getColumnIndex("EXISTENCIA")) + " - Precio: " + funcion.formatDecimal(cur.getDouble(cur.getColumnIndex("PRECIO")),2));
+					list.add(datum);
+				}
+				return list;
+			} else {
+				return null;
+			}
+		} catch (Exception e) {
+			funcion.MostrarMensajeAceptar(conte, "ERROR AL LISTAR ARTICULOS",e.getMessage());
+			return null;
+		}
+	}
+		
+	public List<Map<String,String>> buscarINIDISPENSABLES(int codigoCliente){
+		try {
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			String Sql = "SELECT A.CODIGO,A.NOMBRE,T.CANTIDADVTA,T.CANTIDADOBJ,T.ACTUALIZACION FROM ARTINDISPENSABLES AS T "
+					+ "INNER JOIN ARTICULOS AS A ON T.CODIGOARTICULO=A.CODIGO "
+					+ "WHERE A.HAB=1 AND T.CANTIDADVTA<T.CANTIDADOBJ AND T.CODIGOCLIENTE=" + codigoCliente;
+			Cursor cur = db.rawQuery(Sql, null);
+			if (cur.getCount()>0){
+				List<Map<String, String>> list = new ArrayList <Map<String, String>>();
+				while (cur.moveToNext()){
+					Map<String, String> datum = new HashMap<String, String>();
+					datum.put("DATO10",cur.getString(cur.getColumnIndex("CODIGO")) +"-"+ cur.getString(cur.getColumnIndex("NOMBRE")));
+					datum.put("DATO11","Venta: " + cur.getDouble(cur.getColumnIndex("CANTIDADVTA")) +
+					" - Objetivo: " + cur.getDouble(cur.getColumnIndex("CANTIDADOBJ")));
+					list.add(datum);
+				}
+				return list;
+			} else {
+				return null;
+			}
+					
+		} catch (Exception ex){
+			return null;
+		}
+	}
+
+	public boolean esArticuloIndispensable(int codigoCliente,String codigoArticulo){
+		boolean existe=false;
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		String Sql = "SELECT * FROM ARTINDISPENSABLES WHERE " +
+				" CODIGOARTICULO="+codigoArticulo +
+				" AND CODIGOCLIENTE=" + codigoCliente+"" +
+				" AND CANTIDADVTA<CANTIDADOBJ";
+		Cursor cur = db.rawQuery(Sql, null);
+		if (cur.getCount()>0){		
+			while (cur.moveToNext()){
+				existe=true;
+				break;
+			}
+		}	
+		return existe;
+	}
+	
+	public List<Map<String,String>> buscarInidispensableCargado(int codigoCliente){
+		try {
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			String Sql = "SELECT A.CODIGO,A.NOMBRE,T.CANTIDADVTA,T.CANTIDADOBJ,T.ACTUALIZACION FROM ARTINDISPENSABLES AS T "
+					+ "INNER JOIN ARTICULOS AS A ON T.CODIGOARTICULO=A.CODIGO "
+					+ "WHERE A.HAB=1 AND T.CANTIDADVTA>0 AND T.CODIGOCLIENTE=" + codigoCliente;
+			Cursor cur = db.rawQuery(Sql, null);
+			if (cur.getCount()>0){
+				List<Map<String, String>> list = new ArrayList <Map<String, String>>();
+				while (cur.moveToNext()){
+					Map<String, String> datum = new HashMap<String, String>();
+					datum.put("DATO10",cur.getString(cur.getColumnIndex("CODIGO")) +"-"+ cur.getString(cur.getColumnIndex("NOMBRE")));
+					datum.put("DATO11","Venta: " + cur.getDouble(cur.getColumnIndex("CANTIDADVTA")) +
+					" - Objetivo: " + cur.getDouble(cur.getColumnIndex("CANTIDADOBJ")));
+					list.add(datum);
+				}
+				return list;
+			} else {
+				return null;
+			}
+					
+		} catch (Exception ex){
+			return null;
+		}
+	}
+	
+	public List<Map<String,String>> buscarLANZAMIENTOS(int codigoCliente) {
+		try {
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			String Sql = "SELECT A.CODIGO,A.NOMBRE,T.CANTIDADVTA,T.CANTIDADOBJ,T.ACTUALIZACION FROM ARTLANZAMIENTOS AS T "
+					+ "INNER JOIN ARTICULOS AS A ON T.CODIGOARTICULO=A.CODIGO "
+					+ "WHERE A.HAB=1 AND T.CANTIDADVTA<T.CANTIDADOBJ AND T.CODIGOCLIENTE=" + codigoCliente;
+			Cursor cur = db.rawQuery(Sql, null);
+			
+			if (cur.getCount()>0){
+				List<Map<String, String>> list = new ArrayList <Map<String, String>>();
+				while (cur.moveToNext()){
+					Map<String, String> datum = new HashMap<String, String>();
+					datum.put("DATO10",cur.getString(cur.getColumnIndex("CODIGO")) +"-"+ cur.getString(cur.getColumnIndex("NOMBRE")));
+					datum.put("DATO11", "Venta: " + cur.getDouble(cur.getColumnIndex("CANTIDADVTA")) +
+					" - Objetivo: " + cur.getDouble(cur.getColumnIndex("CANTIDADOBJ")));
+					list.add(datum);
+				}
+				return list;
+			} else {
+				return null;
+			}
+					
+		} catch (Exception ex){
+			return null;
+		}
+	}
+
+	
+	
+	public boolean esArticuloLanzamiento(int codigoCliente,String codigoArticulo){
+		boolean existe=false;
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		String Sql = "SELECT * FROM ARTLANZAMIENTOS WHERE " +
+				" CODIGOARTICULO="+codigoArticulo +
+				" AND CODIGOCLIENTE=" + codigoCliente+"" +
+				" AND CANTIDADVTA<CANTIDADOBJ";
+		Cursor cur = db.rawQuery(Sql, null);
+		if (cur.getCount()>0){		
+			while (cur.moveToNext()){
+				existe=true;
+				break;
+			}
+		}	
+		return existe;
+	}
+	
+	
+	public List<Map<String,String>> buscarLanzamientosCargados(int codigoCliente) {
+		try {
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			String Sql = "SELECT A.CODIGO,A.NOMBRE,T.CANTIDADVTA,T.CANTIDADOBJ,T.ACTUALIZACION FROM ARTLANZAMIENTOS AS T "
+					+ "INNER JOIN ARTICULOS AS A ON T.CODIGOARTICULO=A.CODIGO "
+					+ "WHERE A.HAB=1 AND T.CANTIDADVTA>0 AND T.CODIGOCLIENTE=" + codigoCliente;
+			Cursor cur = db.rawQuery(Sql, null);
+			
+			if (cur.getCount()>0){
+				List<Map<String, String>> list = new ArrayList <Map<String, String>>();
+				while (cur.moveToNext()){
+					Map<String, String> datum = new HashMap<String, String>();
+					datum.put("DATO10",cur.getString(cur.getColumnIndex("CODIGO")) +"-"+ cur.getString(cur.getColumnIndex("NOMBRE")));
+					datum.put("DATO11", "Venta: " + cur.getDouble(cur.getColumnIndex("CANTIDADVTA")) +
+					" - Objetivo: " + cur.getDouble(cur.getColumnIndex("CANTIDADOBJ")));
+					list.add(datum);
+				}
+				return list;
+			} else {
+				return null;
+			}
+					
+		} catch (Exception ex){
+			return null;
+		}
+	}
+	
+	public List<Map<String,String>> buscarSUGERIDOS() {
+		try {
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			String Sql = "SELECT A.CODIGO,A.NOMBRE,S.MENSAJE,S.VENCIMIENTO FROM SUGERIDOS AS S "
+					+ "INNER JOIN ARTICULOS AS A ON S.CODIGOARTICULO=A.CODIGO "
+					+ "WHERE A.HAB=1";
+			Cursor cur = db.rawQuery(Sql, null);
+			if (cur.getCount()>0){
+				List<Map<String, String>> list = new ArrayList <Map<String, String>>();
+				while (cur.moveToNext()){
+					Map<String, String> datum = new HashMap<String, String>();
+					datum.put("DATO10", cur.getString(cur.getColumnIndex("CODIGO")) + "-" +cur.getString(cur.getColumnIndex("NOMBRE")));
+					datum.put("DATO11", cur.getString(cur.getColumnIndex("MENSAJE")) + " / " +
+					funcion.dateToString_ddmmyyyy(cur.getLong(cur.getColumnIndex("VENCIMIENTO"))));
+					list.add(datum);
+				}
+				return list;
+			} else {
+				return null;
+			}
+					
+		} catch (Exception ex){
+			return null;
+		}
+	}
+	
+	public boolean esArticuloSugerido(String codigoArticulo){
+		boolean existe=false;
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		String Sql = "SELECT * FROM SUGERIDOS WHERE CODIGOARTICULO="+codigoArticulo;
+		Cursor cur = db.rawQuery(Sql, null);
+		if (cur.getCount()>0){		
+			while (cur.moveToNext()){
+				existe=true;
+				break;
+			}
+		}	
+		return existe;
+	}
+	
+	public String precioPorLista(int codigoCliente, Articulos articulo){
+		double precioCalculado=0;
+		double porcentaje=0;
+		int codigoDeLista;
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		
+		String Sql = "SELECT CODIGOLISTAPRECIO FROM CLIENTES WHERE CODIGO=" + codigoCliente;
+		Cursor cur = db.rawQuery(Sql, null);
+		if (cur.moveToNext()){
+			codigoDeLista = cur.getInt(cur.getColumnIndex("CODIGOLISTAPRECIO"));
+			if (codigoDeLista>0) {
+				Sql = "SELECT PORCENTAJE FROM LISTASPRECIO WHERE HAB=1 AND CODIGORUBRO=" + articulo.getRubro() + " AND CODIGO=" + codigoDeLista + " AND CODIGOSUBRUBRO=0 AND CODIGOARTICULO='0'";
+				cur = db.rawQuery(Sql, null);
+				if (cur.moveToNext()) {
+					porcentaje = cur.getDouble(cur.getColumnIndex("PORCENTAJE"));					
+				} else {
+					Sql = "SELECT PORCENTAJE FROM LISTASPRECIO WHERE HAB=1 AND CODIGORUBRO=" + articulo.getRubro() + " AND CODIGOSUBRUBRO="+ articulo.getSubRubro() + " AND CODIGO=" + codigoDeLista + " AND CODIGOARTICULO='0'";
+					cur = db.rawQuery(Sql, null);
+					if (cur.moveToNext()) {
+						porcentaje = cur.getDouble(cur.getColumnIndex("PORCENTAJE"));					
+					} else {
+						Sql = "SELECT PORCENTAJE FROM LISTASPRECIO WHERE HAB=1 AND CODIGOARTICULO='" + articulo.getCodigoIdus() + "' AND CODIGO=" + codigoDeLista + " AND CODIGORUBRO=0 AND CODIGOSUBRUBRO=0";
+						cur = db.rawQuery(Sql, null);
+						if (cur.moveToNext()) {
+							porcentaje = cur.getDouble(cur.getColumnIndex("PORCENTAJE"));					
+						} else {
+							porcentaje=0;
+						}
+					}
+				}
+                if (porcentaje<0 && precioCalculado==0){
+                    porcentaje = porcentaje*-1;
+                    //porcentaje = (porcentaje /100) +1;
+                    double descuento=(porcentaje * articulo.getPrecio())/100;
+                    precioCalculado = articulo.getPrecio() - descuento;
+                }
+                if (porcentaje>0 && precioCalculado==0){
+                    //porcentaje = (porcentaje /100) +1;
+                	double aumento=(porcentaje * articulo.getPrecio())/100;
+                    precioCalculado = articulo.getPrecio() + aumento;
+                }
+                if (porcentaje==0){
+                	precioCalculado = articulo.getPrecio();
+                }
+                return funcion.formatDecimal(precioCalculado, 2);
+			} else {
+				return funcion.formatDecimal(articulo.getPrecio(), 2);
+			}
+		} else {
+			return funcion.formatDecimal(articulo.getPrecio(), 2);
+		}
+	}
+	
+	
+	public boolean controlaStock(int codigoRubro, int codigoSubRubro) throws Exception{
+		try {
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();		
+			String Sql = "SELECT * FROM SUBRUBROS WHERE CODIGO=" + codigoSubRubro + " AND CODIGORUBRO=" + codigoRubro;
+			Cursor cur = db.rawQuery(Sql, null);
+			if (cur.moveToNext()) {
+				if (cur.getInt(cur.getColumnIndex("CONTROLASTOCK"))==1) {
+					return true;
+				} else {
+					return false;
+				}
+			} else {
+				return false;
+			}
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new Exception(e.getMessage());
+		}
+	}
+
+
+}

@@ -1,0 +1,121 @@
+package com.gvs.idusapp;
+
+import com.gvs.controladores.ControladorUsuario;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+import android.app.Activity;
+import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.widget.TextView;
+
+public class CustomerInformationActivity extends Activity {
+
+	private TextView lbl_nombre,lbl_domicilio,lbl_responsabilidad,lbl_canal,lbl_provincia,lbl_localidad,lbl_telefono,lbl_observaciones,lbl_saldo;
+	private TextView lbl_periodo,lbl_periodo_anterior,lbl_periodo_actual,lbl_visita_semana,lbl_vanta_periodo_actual,
+	lbl_fecha_actualizacion,lbl_porcentaje_alcanzado,lbl_objetivo_visita;
+	private Funciones funcion;
+	private ControladorUsuario controladorUsuario;
+	private int codigoCliente;
+	private Bundle bun;
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_customer_information);
+		funcion=new Funciones();
+	    bun = getIntent().getExtras();
+		controladorUsuario = new ControladorUsuario();
+		codigoCliente = bun.getInt("CODIGOCLIENTE");
+		//cliente
+		lbl_nombre=(TextView)findViewById(R.id.lbl_value_nombre);
+		lbl_domicilio=(TextView)findViewById(R.id.lbl_value_domicilio);
+		lbl_responsabilidad=(TextView)findViewById(R.id.lbl_value_responsabilidad);
+		lbl_canal=(TextView)findViewById(R.id.lbl_value_canal);
+		lbl_provincia=(TextView)findViewById(R.id.lbl_value_provincia);
+		lbl_localidad=(TextView)findViewById(R.id.lbl_value_localidad);
+		lbl_telefono=(TextView)findViewById(R.id.lbl_value_telefono);
+		lbl_saldo=(TextView)findViewById(R.id.lbl_value_saldo);
+		lbl_observaciones=(TextView)findViewById(R.id.lbl_value_observaciones);
+		
+		//obetivo
+		lbl_periodo=(TextView)findViewById(R.id.lbl_value_periodo);
+		lbl_periodo_anterior=(TextView)findViewById(R.id.lbl_value_periodo_anterior);
+		lbl_periodo_actual=(TextView)findViewById(R.id.lbl_value_periodo_actual);
+		lbl_visita_semana=(TextView)findViewById(R.id.lbl_value_visita_semana);
+		lbl_vanta_periodo_actual=(TextView)findViewById(R.id.lbl_value_venta_periodo_actual);
+		lbl_fecha_actualizacion=(TextView)findViewById(R.id.lbl_value_fecha_actualizacion);
+		lbl_porcentaje_alcanzado=(TextView)findViewById(R.id.lbl_value_porcentaje_alcanzado);
+		lbl_objetivo_visita=(TextView)findViewById(R.id.lbl_value_objtivo_visita);
+		
+	
+		BaseDeDatos baseDeDatos = new BaseDeDatos(CustomerInformationActivity.this, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		
+		String Sql = "SELECT * FROM CLIENTES WHERE CODIGO=" + codigoCliente;
+		Cursor cur = db.rawQuery(Sql, null);
+		if (cur.moveToNext()){
+			lbl_nombre.setText("NOMBRE: " +cur.getInt(cur.getColumnIndex("CODIGO")) + " - " + cur.getString(cur.getColumnIndex("NOMBRE")));
+			lbl_domicilio.setText("DOMICILIO: "+cur.getString(cur.getColumnIndex("DOMICILIO")));
+			lbl_responsabilidad.setText("RESPONSABILIDAD: "+cur.getString(cur.getColumnIndex("RESPONSABILIDAD")));
+			lbl_canal.setText("CANAL: "+cur.getString(cur.getColumnIndex("CANAL")));
+			lbl_provincia.setText("PROVINCIA: "+cur.getString(cur.getColumnIndex("PROVINCIA")));
+			lbl_localidad.setText("LOCALIDAD: "+cur.getString(cur.getColumnIndex("LOCALIDAD")));
+			lbl_telefono.setText("TELEFONO: "+cur.getString(cur.getColumnIndex("TELEFONO")));
+			lbl_saldo.setText("SALDO: "+String.valueOf(funcion.formatDecimal(cur.getDouble(cur.getColumnIndex("SALDO")),2)));
+			lbl_observaciones.setText("OBSERVACIONES: "+cur.getString(cur.getColumnIndex("OBSERVACIONES")));
+			
+		}
+		
+		
+		Sql = "SELECT * FROM OBJXVISITA WHERE CODIGOCLIENTE=" + codigoCliente + " AND PERIODO='" + funcion.dateToString_MMYYYY(new java.util.Date().getTime()) + "'";
+		cur = db.rawQuery(Sql, null);
+		if (cur.moveToNext()){
+			double objetivoActual=cur.getDouble(cur.getColumnIndex("OBJ_ACT"));
+			double cantidadVisitas=cur.getDouble(cur.getColumnIndex("CAN_VIS"));
+			
+			lbl_periodo.setText(cur.getString(cur.getColumnIndex("PERIODO")));
+			lbl_periodo_anterior.setText(funcion.formatDecimal(cur.getDouble(cur.getColumnIndex("VTA_ANT")), 2));
+			lbl_periodo_actual.setText(funcion.formatDecimal(objetivoActual, 2));
+			lbl_visita_semana.setText(funcion.formatDecimal(cantidadVisitas, 2));
+			lbl_vanta_periodo_actual.setText(funcion.formatDecimal(cur.getDouble(cur.getColumnIndex("VTA_ACT")), 2));
+			lbl_fecha_actualizacion.setText(funcion.dateToString_ddmmyyyy_hhmm(cur.getLong(cur.getColumnIndex("FEC_ACT"))));
+			lbl_porcentaje_alcanzado.setText(funcion.formatDecimal(cur.getDouble(cur.getColumnIndex("PORC")), 2));
+			if (objetivoActual>0 && cantidadVisitas>0){
+				double objetivoXVisita = objetivoActual/cantidadVisitas;
+				lbl_objetivo_visita.setText(funcion.formatDecimal(objetivoXVisita, 2));
+			}
+		}
+		
+	}
+	
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.customer_information, menu);
+		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		int id = item.getItemId();
+		if(id == R.id.cerrar_sesion){
+		startActivity(new Intent(getBaseContext(), MainActivity.class)
+        .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
+		controladorUsuario.cerrarSesion(this);
+		finish();
+	}else if(id == R.id.sincronizar){
+		Intent i = new Intent(this, SyncActivity.class);
+		bun.putString("SINCRONIZACION","GENERAL");
+		i.putExtras(bun);
+		startActivity(i);
+	}
+		return super.onOptionsItemSelected(item);
+	}
+
+
+
+}

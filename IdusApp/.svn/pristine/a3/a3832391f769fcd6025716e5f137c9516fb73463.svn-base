@@ -1,0 +1,166 @@
+package com.gvs.idusapp;
+
+import java.util.ArrayList;
+import java.util.List;
+import com.gvs.controladores.ControladorPedido;
+import com.gvs.controladores.ControladorUsuario;
+import com.gvs.utilidades.OperationClient;
+import android.app.Activity;
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.TextView;
+
+public class ClientOperationActivity extends Activity {
+	private List<OperationClient> list;
+	private ListView listView;
+	private  Bundle bun ;
+	private ControladorUsuario controladorUsuario;
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_client_operation);
+		try{
+			controladorUsuario = new ControladorUsuario();
+			list = new ArrayList<OperationClient>();
+			bun = getIntent().getExtras();
+			String[] cliente=bun.getString("DATO01").split("-");
+			setTitle(cliente[1]);
+			llenarLista();
+			mostrarLista();
+			realizarOperacion();
+		}catch(Exception ex){
+			ex.getMessage();
+		}
+	}
+
+	private void llenarLista() {
+		list.add(new OperationClient("Realizar Pedidos", R.drawable.pedir));
+		list.add(new OperationClient("Datos del Cliente",R.drawable.info_cliente));
+		list.add(new OperationClient("Historico de Pedidos", R.drawable.historico));
+		list.add(new OperationClient("Motivos de no Venta", R.drawable.motivos));
+		list.add(new OperationClient("Encuestas al Cliente", R.drawable.encuesta2));
+		list.add(new OperationClient("Deuda y Cobranza", R.drawable.cobranza));
+		list.add(new OperationClient("Localizacion GPS", R.drawable.gps));
+
+	}
+
+	private void mostrarLista() {
+		ArrayAdapter<OperationClient> adapter = new MyListAdapter();
+		listView = (ListView) findViewById(R.id.lista_operaciones_clientes);
+		listView.setAdapter(adapter);
+	}
+
+	private void realizarOperacion() {
+		listView = (ListView) findViewById(R.id.lista_operaciones_clientes);
+		listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+			Intent intent;
+
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view,
+					int position, long id) {
+				switch (position) {
+				case 0: {
+					ControladorPedido pedidos =new ControladorPedido(ClientOperationActivity.this);
+				    intent = new Intent(ClientOperationActivity.this, RealizeOrderActivity.class);
+					bun.putLong("NUMERO", pedidos.numeroPedido());
+					intent.putExtras(bun);
+					startActivity(intent);
+					break;
+				}
+				case 1: {
+					intent = new Intent(ClientOperationActivity.this,CustomerInformationActivity.class);
+					intent.putExtras(bun);
+					startActivity(intent);
+					break;
+				}
+				case 2: {
+					 intent = new Intent(ClientOperationActivity.this,OrderClientActivity.class);
+					 intent.putExtras(bun);
+					 startActivity(intent);
+					break;
+				}
+				case 3: {
+					intent = new Intent(ClientOperationActivity.this,MotiveActivity.class);
+					intent.putExtras(bun);
+					startActivity(intent);
+					break;
+				}
+				case 4: {
+					intent = new Intent(ClientOperationActivity.this,QuestionActivity.class);
+					intent.putExtras(bun);
+					startActivity(intent);
+					break;
+				}
+				case 5: {
+					intent = new Intent(ClientOperationActivity.this,VoucherClientActivity.class);
+					intent.putExtras(bun);
+					startActivity(intent);
+					break;
+				}
+				case 6: {
+					intent = new Intent(ClientOperationActivity.this,GpsClientActivity.class);
+					intent.putExtras(bun);
+					startActivity(intent);
+					break;
+				}
+				}
+
+			}
+		});
+	}
+
+	private class MyListAdapter extends ArrayAdapter<OperationClient> {
+
+		public MyListAdapter() {
+			super(ClientOperationActivity.this,R.layout.activity_client_operation, list);
+		}
+
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) {
+			View view = convertView;
+			if (view == null) {
+				view = getLayoutInflater().inflate(R.layout.row_operation_client, parent, false);
+			}
+			OperationClient operationClient = list.get(position);
+			ImageView image_operation = (ImageView) view.findViewById(R.id.img_operation);
+			image_operation.setImageResource(operationClient.getIcon());
+
+			TextView lbl_operation = (TextView) view.findViewById(R.id.lbl_operation);
+			lbl_operation.setText(operationClient.getName());
+			return view;
+		}
+
+	}
+	
+	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.client_operation, menu);
+		return true;
+	}
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		int id = item.getItemId();
+		if (id == R.id.cerrar_sesion) {
+			startActivity(new Intent(getBaseContext(), MainActivity.class)
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
+			controladorUsuario.cerrarSesion(this);
+			finish();
+		}else if(id == R.id.sincronizar){
+			Intent i = new Intent(this, SyncActivity.class);
+			bun.putString("SINCRONIZACION","GENERAL");
+			i.putExtras(bun);
+			startActivity(i);
+		}
+		return super.onOptionsItemSelected(item);
+	}
+}

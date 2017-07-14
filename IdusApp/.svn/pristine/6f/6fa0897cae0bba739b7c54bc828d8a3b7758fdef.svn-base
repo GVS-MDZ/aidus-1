@@ -1,0 +1,131 @@
+package com.gvs.idusapp;
+
+import com.gvs.busquedas.BusquedaConfiguracion;
+import com.gvs.entidades.Configuracion;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.Toast;
+
+public class ConfigurationActivity extends Activity {
+	private Button boGrabar;
+	private EditText txt_servidor, txt_puerto, txt_items;
+	private CheckBox chCierreDiaCompleto, chMuestrasugeridos, chServicioGEOPOS,
+			chVerOtroDia, chDescuento;
+	private BusquedaConfiguracion busquedaConfiguracion;
+	private Configuracion configuracion;
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_configuration);
+		try{
+			boGrabar = (Button) findViewById(R.id.btn_aceptar);
+			txt_servidor = (EditText) findViewById(R.id.txt_servidor);
+			txt_puerto = (EditText) findViewById(R.id.txt_puerto);
+			txt_items = (EditText) findViewById(R.id.txt_items);
+			chCierreDiaCompleto = (CheckBox) findViewById(R.id.chk_cierre_dia);
+			chMuestrasugeridos = (CheckBox) findViewById(R.id.chk_muestra_sugeridos);
+			chServicioGEOPOS = (CheckBox) findViewById(R.id.chk_servicio_geo);
+			chVerOtroDia = (CheckBox) findViewById(R.id.chk_ver_dia);
+			chDescuento = (CheckBox) findViewById(R.id.chk_permite_descuento);
+			busquedaConfiguracion = new BusquedaConfiguracion(this);
+			configuracion = busquedaConfiguracion.buscarConfiguracion();
+			if(configuracion==null){
+				configuracion=new Configuracion();
+				configuracion.setNombreSrv("agvs-mdz.dyndns.org");
+				configuracion.setPuerto(8080);
+			}
+			txt_servidor.setText(configuracion.getNombreSrv());
+			txt_items.setText(String.valueOf(configuracion.getCantidadItems()));
+			txt_puerto.setText(String.valueOf(configuracion.getPuerto()));
+			if (configuracion.getDiaCompleto() == 1) {
+				chCierreDiaCompleto.setChecked(true);
+			} else {
+				chCierreDiaCompleto.setChecked(false);
+			}
+			if (configuracion.getMuestraSugeridos() == 1) {
+				chMuestrasugeridos.setChecked(true);
+			} else {
+				chMuestrasugeridos.setChecked(false);
+			}
+			if (configuracion.getServicioGeo() == 1) {
+				chServicioGEOPOS.setChecked(true);
+			} else {
+				chServicioGEOPOS.setChecked(false);
+			}
+			if (configuracion.getOtroDia() == 1) {
+				chVerOtroDia.setChecked(true);
+			} else {
+				chVerOtroDia.setChecked(false);
+			}
+			if (configuracion.getDescuento() == 1) {
+				chDescuento.setChecked(true);
+			} else {
+				chDescuento.setChecked(false);
+			}
+	
+			boGrabar.setOnClickListener(new OnClickListener() {
+	
+				@Override
+				public void onClick(View v) {
+					if (txt_servidor.getText().toString().trim().equals("")) {
+						txt_servidor.setText("agvs-mdz.dyndns.org");
+					}
+					if (txt_puerto.getText().toString().trim().equals("")) {
+						txt_puerto.setText("8080");
+					}
+					if (txt_items.getText().toString().trim().equals("")) {
+						txt_items.setText("35");
+					}
+					if (Integer.parseInt(txt_items.getText().toString().trim()) > 35) {
+						txt_items.setText("35");
+					}
+					if (Integer.parseInt(txt_items.getText().toString().trim()) < 5) {
+						txt_items.setText("13");
+					}
+					configuracion = new Configuracion();
+					configuracion.setNombreSrv(txt_servidor.getText().toString());
+					configuracion.setPuerto(Integer.parseInt(txt_puerto.getText().toString()));
+					configuracion.setServicioGeo(1);
+					configuracion.setCantidadItems(Integer.parseInt(txt_items.getText().toString()));
+					if (chCierreDiaCompleto.isChecked()) {
+						configuracion.setDiaCompleto(1);
+					} else {
+						configuracion.setDiaCompleto(0);
+					}
+					if (chMuestrasugeridos.isChecked()) {
+						configuracion.setMuestraSugeridos(1);
+					} else {
+						configuracion.setMuestraSugeridos(0);
+					}
+	
+					if (chVerOtroDia.isChecked()) {
+						configuracion.setOtroDia(1);
+					} else {
+						configuracion.setOtroDia(0);
+					}
+					if (chDescuento.isChecked()) {
+						configuracion.setDescuento(1);
+					} else {
+						configuracion.setDescuento(0);
+					}
+	
+					busquedaConfiguracion.guardarConfiguracion(configuracion);
+	
+					finish();
+				}
+			});
+		}catch(Exception ex){
+			Toast toast = Toast.makeText(getApplicationContext(),"Bug en la configuracion", Toast.LENGTH_SHORT);
+			toast.show();
+			finish();
+		}
+	}
+	
+}

@@ -1,0 +1,77 @@
+package com.gvs.busquedas;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import com.gvs.idusapp.R;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+import com.gvs.utilidades.Question;
+
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+
+public class BusquedaEncuestas {
+	private Context conte;
+	private Funciones funcion = new Funciones();
+	
+	public BusquedaEncuestas(Context cont){
+		conte=cont;
+	}
+	
+	public List<Question> buscarEncuestas(int codigoCliente,int codigoVendedor) {
+		try{
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();	
+		SimpleDateFormat format=new SimpleDateFormat("dd-MM-yyyy");
+		String fecha=format.format(new Date());
+		Date fec=format.parse(fecha);
+		long fechaActual =fec.getTime();
+		String sql = "SELECT * FROM ENCUESTACABECERA WHERE FECHAFIN>=" + fechaActual + " AND FECHAINI<=" + fechaActual;
+		Cursor cur = db.rawQuery(sql, null);
+			List<Question>list=new ArrayList<Question>();
+			while (cur.moveToNext()){
+				Question question=new Question();
+				question.setNumber(Integer.parseInt(funcion.format(cur.getInt(cur.getColumnIndex("NUMERO")),4)));
+				question.setDescription(cur.getString(cur.getColumnIndex("NOMBRE")));
+				question.setDate_start(funcion.dateToString_yyyymmdd_hhmm(cur.getLong(cur.getColumnIndex("FECHAINI"))));
+				question.setDate_end(funcion.dateToString_yyyymmdd_hhmm(cur.getLong(cur.getColumnIndex("FECHAFIN"))));
+				String sql2="SELECT * FROM TOMAENCUESTACABECERA WHERE NUMEROENCUESTA='" + cur.getInt(cur.getColumnIndex("NUMERO")) + "' AND CODIGOCLIENTE="+codigoCliente+" AND CODIGOVENDEDOR="+codigoVendedor;
+				Cursor cur2 = db.rawQuery(sql2, null);
+				question.setIcon(R.drawable.amarillo);
+				while(cur2.moveToNext()){
+					question.setIcon(R.drawable.verde);		
+				}
+				list.add(question);
+			}
+			return list;	
+		}catch(Exception ex){
+			return null;
+		}
+	}
+	
+	public String buscarNuevoItem(int numeroEncuesta,int numeroItem) {
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		
+		String respuesta="";
+		String sql = "SELECT ITEM,PREGUNTA,AYUDA FROM ENCUESTACUERPO WHERE NUMERO=" + numeroEncuesta + " AND ITEM>" + numeroItem + " ORDER BY ITEM LIMIT 1 ";
+		Cursor cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			respuesta = cur.getString(cur.getColumnIndex("PREGUNTA")) + "~" + cur.getString(cur.getColumnIndex("AYUDA")) + "~" + cur.getInt(cur.getColumnIndex("ITEM"));			
+		} else {
+			if (numeroItem>0) {
+				respuesta="ef";
+			} else {
+				respuesta="ev";
+			}
+		}
+		return respuesta;
+	}
+	
+
+
+}

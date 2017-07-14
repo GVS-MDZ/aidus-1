@@ -1,0 +1,50 @@
+package com.gvs.conectoras;
+
+import java.io.DataInputStream;
+import android.content.Context;
+import android.database.SQLException;
+import android.database.sqlite.SQLiteDatabase;
+import com.gvs.entidades.Configuracion;
+import com.gvs.entidades.Sincronizador;
+import com.gvs.exceptiones.ConectorException;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+
+public class ConectorSincronizador extends ConectorGeneral {
+
+	private Context conte;
+	private Funciones funcion = new Funciones();
+	private Sincronizador syncro;
+	
+	public ConectorSincronizador(Configuracion conf, Context cont,int empresa, Sincronizador sincro){
+		super(conf);
+		conte=cont;
+		syncro=sincro;
+	}
+
+	@Override
+	protected String CompletarURL() throws ConectorException {
+		// TODO Auto-generated method stub
+		String strURL = "insertarSyncronizacion?empresa=" + syncro.getCodigoEmpresa() + 
+				"&vendedor=" + syncro.getCodigoVendedor() + "&fechaInicio=" + syncro.getFechaIncio() +
+				"&fecha=" + syncro.getFecha() + "&modo=" + syncro.getModo() + "&internet=" + syncro.getInternet();
+		return strURL;
+	}
+
+	@Override
+	protected void procesarRespuesta(DataInputStream in)throws ConectorException {
+		// TODO Auto-generated method stub
+		try {
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			String Sql = "UPDATE SYNCRO SET ESTADO=1 WHERE FECHA=" + syncro.getFecha();
+			db.execSQL(Sql);
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new ConectorException(e.getMessage());
+		}
+	}
+	}
+	
+	

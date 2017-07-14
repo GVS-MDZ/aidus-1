@@ -1,0 +1,144 @@
+package com.gvs.busquedas;
+
+import java.text.SimpleDateFormat;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Vector;
+import android.annotation.SuppressLint;
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.SQLException;
+import android.database.sqlite.SQLiteDatabase;
+import com.gvs.entidades.Sincronizador;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+
+@SuppressLint("SimpleDateFormat")
+public class BusquedaSincronizacion {
+	private Context conte;
+	private Funciones funcion = new Funciones();
+	
+	
+	public BusquedaSincronizacion(Context cont){
+		conte=cont;
+	}
+	
+	public void guardarSincronizacionParcial(int empresa,int vendedor){
+		funcion=new Funciones(conte);
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null,funcion.Version());
+		final SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		ContentValues cont = new ContentValues();	
+		Date fecha = new Date();
+		cont.put("CODIGOEMPRESA", empresa);
+		cont.put("CODIGOVENDEDOR", vendedor);
+		cont.put("FECHAINICIO", fecha.getTime());
+		cont.put("FECHA", fecha.getTime());
+		cont.put("MODO", "R");
+		cont.put("INTERNET", funcion.estadoRedes());
+		cont.put("ESTADO", 0);
+		db.insert("SYNCRO", null, cont);
+	}
+	
+	public boolean comprobarSync(Context cont, String tipo, int empresa,int vendedor) {
+		BaseDeDatos baseDeDatos = new BaseDeDatos(cont, funcion.BaseDeDatos(), null,funcion.Version());
+		final SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+
+		String sql = "SELECT MAX(FECHA) FROM SYNCRO WHERE CODIGOEMPRESA="
+				+ empresa + " AND CODIGOVENDEDOR=" + vendedor + " AND MODO='"+tipo+"'";
+		Cursor cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			if (cur.getString(0) != null) {
+				long fecha = Long.parseLong(cur.getString(0));
+				long fechaActual = new Date().getTime();
+				long diferencia = fechaActual - fecha;
+				if (diferencia >= 43200000) {
+					return false;
+				} else {
+					return true;
+				}
+			} else {
+				return false;
+			}
+		} else {
+			return false;
+		}
+	}
+	
+	public boolean realizoSincronizacionGeneral(Context cont, String tipo, int empresa,int vendedor) {
+		try{
+			BaseDeDatos baseDeDatos = new BaseDeDatos(cont, funcion.BaseDeDatos(), null,funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			String sql = "SELECT * FROM SYNCRO WHERE CODIGOEMPRESA="+ empresa + " AND CODIGOVENDEDOR=" + vendedor + " AND MODO='"+tipo+"'";
+			Cursor cur = db.rawQuery(sql, null);
+			int contador=0;
+			if (cur.getColumnCount()>0){
+				while (cur.moveToNext()){
+					SimpleDateFormat format=new SimpleDateFormat("dd/MM/yyyy");
+					String fecha=format.format(new Date());
+					Date fecha_sincro=new Date(cur.getLong(cur.getColumnIndex("FECHA")));
+					String sincro=format.format(fecha_sincro);
+					if(sincro.equals(fecha)){
+						contador++;
+					}
+			     } 
+			}
+			if(contador>0){
+				return true;
+			}else{
+				return false;
+			}
+		}catch(Exception ex){
+			return false;
+		}	
+	}
+	
+	public boolean marcarParaEnviar() throws Exception{
+		try {
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			String Sql=""; 
+			Sql = "UPDATE SYNCRO SET ESTADO=11 WHERE ESTADO=0";
+			db.execSQL(Sql);
+			return true;
+		} catch (SQLException e) {
+			e.printStackTrace();
+			throw new Exception("ERROR:Al intentar marcar sincronismos para ser enviados. " +
+					"Pongase en contacto con la mesa de ayuda. Error: " + e.getMessage());
+		}
+	}
+	
+	public Collection<Sincronizador> buscarSincronizacionesParaEnviar() throws Exception{
+		try {
+			Vector<Sincronizador> syncros = new Vector<Sincronizador>();
+			BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			String Sql = "SELECT * FROM SYNCRO WHERE ESTADO=11";
+			Cursor cur = db.rawQuery(Sql, null);
+			if (cur.getColumnCount()>0){
+				while (cur.moveToNext()){
+					Sincronizador syncro = new Sincronizador();
+					syncro.setCodigoEmpresa(cur.getInt(cur.getColumnIndex("CODIGOEMPRESA")));
+					syncro.setCodigoVendedor(cur.getInt(cur.getColumnIndex("CODIGOVENDEDOR")));
+					syncro.setFechaIncio(cur.getLong(cur.getColumnIndex("FECHAINICIO")));
+					syncro.setFecha(cur.getLong(cur.getColumnIndex("FECHA")));
+					syncro.setModo(cur.getString(cur.getColumnIndex("MODO")));
+					syncro.setInternet(cur.getString(cur.getColumnIndex("INTERNET")));
+					syncros.add(syncro);
+				}
+			}
+			return syncros;
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new Exception(e.getMessage());
+		}
+	}
+	
+	public void modificarSincronizacionConector(Sincronizador syncro){
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		String Sql = "UPDATE SYNCRO SET ESTADO=1 WHERE FECHA=" + syncro.getFecha();
+		db.execSQL(Sql);
+	}
+	
+}

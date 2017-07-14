@@ -1,0 +1,231 @@
+package com.gvs.idusapp;
+
+import java.util.ArrayList;
+import java.util.List;
+import com.gvs.busquedas.BusquedaNoAtendidos;
+import com.gvs.busquedas.BusquedaPedidos;
+import com.gvs.controladores.ControladorUsuario;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Client;
+import com.gvs.utilidades.Funciones;
+import android.app.Activity;
+import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.TextView;
+
+public class ClientActivity extends Activity {
+	private ListView listC;
+	private RadioGroup radio_group;
+	private RadioButton radio_nombre;
+	private RadioButton radio_direccion;
+	private RadioButton radio_visita;
+	private int lVendedor = 0;
+	private Bundle bun;
+	private Funciones funcion;
+	private int dia;
+	private Client client;
+	private List<Client> list;
+	private ControladorUsuario controladorUsuario;
+	
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_client);
+		bun = getIntent().getExtras();
+		controladorUsuario = new ControladorUsuario();
+		listC = (ListView) findViewById(R.id.lista_clientes);
+		radio_group = (RadioGroup) findViewById(R.id.radio_tipo_texto);
+		radio_nombre = (RadioButton) findViewById(R.id.radio_tipo_numerico);
+		radio_direccion = (RadioButton) findViewById(R.id.radio_tipo_alfa);
+		radio_visita = (RadioButton) findViewById(R.id.radio_detalle);
+		dia = bun.getInt("DIA");
+		lVendedor = bun.getInt("VENDEDOR");
+		BuscarClientes(dia, 0);
+		mostrarLista();
+		realizarOperacion();
+		radio_group.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+					@Override
+					public void onCheckedChanged(RadioGroup group, int checkedId) {
+						if (radio_nombre.isChecked() == true) {
+							BuscarClientes(dia, 1);
+							mostrarLista();
+						} else if (radio_direccion.isChecked() == true) {
+							BuscarClientes(dia, 2);
+							mostrarLista();
+						} else if (radio_visita.isChecked() == true) {
+							BuscarClientes(dia, 0);
+							mostrarLista();
+						}
+					}
+				});
+
+	}
+
+	private void BuscarClientes(int dia, int sOrden) {
+		funcion = new Funciones();
+		BaseDeDatos baseDeDatos = new BaseDeDatos(ClientActivity.this,funcion.BaseDeDatos(), null, funcion.Version());
+		String condicion = "";
+		String orden = "";
+		if (dia == 0) {
+			condicion = " WHERE C.CODIGOVENDEDOR=" + lVendedor + " AND V.DIAS IN('0000000','8888888','9999999') AND HAB=1";
+		} else {
+			condicion = " WHERE SUBSTR(V.DIAS," + dia + ",1)='" + dia
+					+ "' AND C.CODIGOVENDEDOR=" + lVendedor + " AND HAB=1";
+		}
+		switch (sOrden) {
+		case 0:
+			orden = " ORDER BY V.ORDEN";
+			break;
+		case 1:
+			orden = " ORDER BY C.NOMBRE";
+			break;
+		case 2:
+			orden = " ORDER BY C.LOCALIDAD,C.DOMICILIO";
+			break;
+		default:
+			break;
+		}
+		Cursor cur = null;
+		try {
+			SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+			String Sql = "SELECT C.CODIGO,C.NOMBRE,C.DOMICILIO,C.LOCALIDAD,C.CODIGOLISTAPRECIO FROM CLIENTES AS C "
+					+ "INNER JOIN VISITAS AS V ON C.CODIGO=V.CODIGOCLIENTE"
+					+ condicion + orden;
+			cur = db.rawQuery(Sql, null);
+			if (cur.getCount() > 0) {
+				list = new ArrayList<Client>();
+				while (cur.moveToNext()) {
+					String codigo = funcion.format(cur.getInt(cur.getColumnIndex("CODIGO")), 5);
+					client = new Client();
+					client.setName(codigo +" - "+ cur.getString(cur.getColumnIndex("NOMBRE")));
+					BusquedaPedidos busPed = new BusquedaPedidos(ClientActivity.this);
+					if (busPed.devolverCantidadVendidosXCliente(dia,cur.getInt(cur.getColumnIndex("CODIGO"))) > 0) {
+						client.setIcon(R.drawable.verde);
+					} else {
+						BusquedaNoAtendidos busmotivo = new BusquedaNoAtendidos(ClientActivity.this);
+						if (busmotivo.buscarClienteNoAtendido(cur.getInt(cur.getColumnIndex("CODIGO"))) > 0) {
+							client.setIcon(R.drawable.rojo);
+						} else {
+							client.setIcon(R.drawable.amarillo);
+						}
+					}
+					client.setAddress(cur.getString(cur.getColumnIndex("DOMICILIO"))+ " ("+ cur.getString(cur.getColumnIndex("LOCALIDAD"))+ ")");
+					list.add(client);
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			if (cur != null) {
+				cur.close();
+			}
+		}
+	}
+
+	private void mostrarLista() {
+		if(list!=null){
+			ArrayAdapter<Client> adapter = new MyListAdapter();
+			listC = (ListView) findViewById(R.id.lista_clientes);
+			listC.setAdapter(adapter);
+		}
+	}
+
+	private void realizarOperacion() {
+		listC = (ListView) findViewById(R.id.lista_clientes);
+		listC.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view,
+					int position, long id) {
+				Client client = list.get(position);
+				bun.putString("DATO01", client.getName());
+				String[] dato01 = client.getName().toString().split("-");
+				bun.putInt("CODIGOCLIENTE", Integer.parseInt(dato01[0].trim()));
+				Intent intent = new Intent(ClientActivity.this,
+						ClientOperationActivity.class);
+				intent.putExtras(bun);
+				startActivity(intent);
+			}
+		});
+	}
+
+	private class MyListAdapter extends ArrayAdapter<Client> {
+
+		public MyListAdapter() {
+			super(ClientActivity.this, R.layout.activity_client, list);
+		}
+
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) {
+			View view = convertView;
+			if (view == null) {
+				view = getLayoutInflater().inflate(R.layout.row_client, parent,
+						false);
+			}
+			Client client = list.get(position);
+			ImageView image_operation = (ImageView) view
+					.findViewById(R.id.img_estado_cliente);
+			image_operation.setImageResource(client.getIcon());
+
+			TextView lbl_name = (TextView) view
+					.findViewById(R.id.lbl_nombre_cliente);
+			lbl_name.setText(client.getName());
+
+			TextView lbl_address = (TextView) view
+					.findViewById(R.id.lbl_direccion_cliente);
+			lbl_address.setText(client.getAddress());
+			return view;
+		}
+
+	}
+
+	@Override
+	protected void onRestart() {
+		super.onRestart();
+		BuscarClientes(dia, 0);
+		radio_visita.setChecked(true);
+		mostrarLista();
+	}
+	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.client, menu);
+		return true;
+	}
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		int id = item.getItemId();
+		if (id == R.id.clientes_mapa) {
+			Intent intent = new Intent(ClientActivity.this, ClientMapActivity.class);
+			intent.putExtras(bun);
+			startActivity(intent);
+		}else if(id == R.id.cerrar_sesion){
+			startActivity(new Intent(getBaseContext(), MainActivity.class)
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
+			controladorUsuario.cerrarSesion(this);
+			finish();
+		}else if(id == R.id.sincronizar){
+			Intent i = new Intent(this, SyncActivity.class);
+			bun.putString("SINCRONIZACION","GENERAL");
+			i.putExtras(bun);
+			startActivity(i);
+		}
+		return super.onOptionsItemSelected(item);
+	}
+
+	
+
+}

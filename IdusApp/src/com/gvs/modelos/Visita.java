@@ -1,0 +1,57 @@
+package com.gvs.modelos;
+
+import android.os.Parcel;
+import android.os.Parcelable;
+
+public class Visita implements Parcelable {
+	
+	private String dias;
+	private String hora;
+	private int orden;
+	private int codigo_cliente;
+
+	public String getDias() {
+		return dias;
+	}
+
+	public void setDias(String dias) {
+		this.dias = dias;
+	}
+
+	public String getHora() {
+		return hora;
+	}
+
+	public void setHora(String hora) {
+		this.hora = hora;
+	}
+
+	public int getOrden() {
+		return orden;
+	}
+
+	public void setOrden(int orden) {
+		this.orden = orden;
+	}
+
+	public int getCodigo_cliente() {
+		return codigo_cliente;
+	}
+
+	public void setCodigo_cliente(int codigo_cliente) {
+		this.codigo_cliente = codigo_cliente;
+	}
+
+	@Override
+	public int describeContents() {
+
+		return 0;
+	}
+
+	@Override
+	public void writeToParcel(Parcel dest, int flags) {
+
+
+	}
+
+}

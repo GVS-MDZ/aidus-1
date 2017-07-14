@@ -1,0 +1,220 @@
+package com.gvs.idusapp;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+
+import com.gvs.busquedas.BusquedaPedidos;
+import com.gvs.conectoras.ConectorActualizacionStock;
+import com.gvs.conectoras.ConectorGeneral;
+import com.gvs.conectoras.ConectorPedido;
+import com.gvs.controladores.ControladorPedido;
+import com.gvs.entidades.Configuracion;
+import com.gvs.entidades.Pedido;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.DetectorDeConexion;
+import com.gvs.utilidades.Funciones;
+import com.gvs.utilidades.Order;
+
+import android.app.ProgressDialog;
+import android.content.ContentValues;
+import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
+import android.os.Bundle;
+import android.os.Handler;
+import android.support.v4.app.Fragment;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.View.OnClickListener;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.TextView;
+
+public class OrderUnsentActivity extends Fragment {
+	private ListView list;
+	private Button btn_enviar;
+	private BusquedaPedidos busPedido;
+	private Bundle bun ;
+	private List<Order> lista;
+	private Handler handler;
+	private int empresa;
+	private int vendedor;
+	private int dia;
+	private ProgressDialog syncPrgDialog = null;
+	private Funciones funcion = new Funciones();
+	
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,Bundle savedInstanceState) {
+		View V = inflater.inflate(R.layout.activity_order_unsent, container, false);
+		btn_enviar = (Button) V.findViewById(R.id.btn_enviar);
+		bun=getActivity().getIntent().getExtras();
+		handler = new Handler();
+		empresa = bun.getInt("EMPRESA");
+		vendedor = bun.getInt("VENDEDOR");
+		dia=bun.getInt("DIA");
+		busPedido=new BusquedaPedidos(getActivity());
+		btn_enviar.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				final Configuracion configuracion = funcion.devolverConfiguracion(getActivity());
+				DetectorDeConexion internet = new DetectorDeConexion(getActivity());
+				syncPrgDialog = ProgressDialog.show(getActivity(),"Sincronizando","Enviando pedidos...");
+				if (internet.conexionInternet()) {
+					Thread thread = new Thread() {
+						public void run() {
+							try {
+								ControladorPedido trbPedidos = new ControladorPedido(getActivity());
+								trbPedidos.marcarParaEnviarPedidos(dia);
+								Collection<Pedido> pedidos = trbPedidos.buscarPedidosParaEnviar(dia);
+								BaseDeDatos baseDeDatos = new BaseDeDatos(getActivity(), funcion.BaseDeDatos(), null, funcion.Version());
+								SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+								String Sql="";
+								for (Pedido pedido : pedidos) {
+									try{
+									ConectorGeneral conectorPedido = new ConectorPedido(configuracion,getActivity(), pedido,empresa, vendedor);
+								    conectorPedido.correr(getActivity());
+									Sql = "UPDATE PEDIDOSCABECERA SET ESTADO=1 WHERE (ESTADO=11 OR ESTADO=12) AND NUMERO=" + pedido.getNumero();
+									db.execSQL(Sql);
+									}catch(Exception ex){
+										Sql = "UPDATE PEDIDOSCABECERA SET ESTADO=12 WHERE ESTADO=11 AND NUMERO=" +  pedido.getNumero();
+										db.execSQL(Sql);
+										Sql = "UPDATE PEDIDOSCUERPO SET ESTADO=12 WHERE ESTADO=11 AND NUMERO=" +  pedido.getNumero();
+										db.execSQL(Sql);	
+										continue;
+									}
+								}
+								ContentValues cont = new ContentValues();	
+								Date fecha = new Date();
+								cont.put("CODIGOEMPRESA", empresa);
+								cont.put("CODIGOVENDEDOR", vendedor);
+								cont.put("FECHAINICIO", fecha.getTime());
+								cont.put("FECHA", fecha.getTime());
+								cont.put("MODO", "R");
+								cont.put("INTERNET",new DetectorDeConexion(getActivity()).estadoRedes());
+								cont.put("ESTADO", 0);
+								db.insert("SYNCRO", null, cont);	
+								ConectorGeneral conectorStock = new ConectorActualizacionStock(configuracion, empresa, 1,getActivity());
+								conectorStock.correr(getActivity());
+								handler.post(new Runnable() {
+									@Override
+									public void run() {
+										buscarPedidos();
+										mostrarLista();	
+										syncPrgDialog.dismiss();
+									}
+								});
+
+							} catch (Exception e) {
+								handler.post(new Runnable() {
+									@Override
+									public void run() {
+										buscarPedidos();
+										mostrarLista();	
+										syncPrgDialog.dismiss();
+									}
+								});
+							}
+						}
+					};
+					thread.start();
+				} else {
+					funcion.MostrarMensajeAceptar(getActivity(),"SIN INTERNET","No podra sincronizar hasta que esté conectado a internet");
+				}
+			}
+		});
+		return V;
+	}
+	
+	@Override
+	public void onActivityCreated(Bundle state) {
+		super.onActivityCreated(state);
+		list =  (ListView)getActivity().findViewById(R.id.lista_pedido_sin_enviar); 
+		bun = getActivity().getIntent().getExtras();
+		empresa = bun.getInt("EMPRESA");
+		vendedor = bun.getInt("VENDEDOR");
+		busPedido=new BusquedaPedidos(getActivity());
+		buscarPedidos();
+		mostrarLista();
+	    realizarOperacion();	
+	    
+		
+	}
+	
+	@Override
+	public void onResume() {
+		list =  (ListView)getActivity().findViewById(R.id.lista_pedido_sin_enviar); 
+		bun = getActivity().getIntent().getExtras();
+		buscarPedidos();
+		mostrarLista();
+		realizarOperacion();
+		super.onResume();
+	}
+	
+	
+	public void buscarPedidos(){
+		lista=busPedido.buscarPedidosPendientesDia(vendedor,dia);
+		
+	}
+	
+	private void mostrarLista() {
+		if(lista!=null){
+		ArrayAdapter<Order> adapter = new MyListAdapter();
+		list = (ListView)getActivity().findViewById(R.id.lista_pedido_sin_enviar);
+		list.setAdapter(adapter);
+		}else{
+			list = (ListView)getActivity().findViewById(R.id.lista_pedido_sin_enviar);
+			list.setAdapter(null);
+		}		
+	}
+	
+	private void realizarOperacion() {
+		list = (ListView)getActivity().findViewById(R.id.lista_pedido_sin_enviar);
+		list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view,
+					int position, long id) {
+				Order order = lista.get(position);
+				String[] dato01 = order.getNumber().toString().split("-");
+				bun.putLong("NUMERO",Long.parseLong(dato01[0].toString().trim()));
+				Intent intent = new Intent(getActivity(),OrderDetailFinalActivity.class);
+				intent.putExtras(bun);
+				startActivity(intent);
+			}
+		});
+	}
+	
+	private class MyListAdapter extends ArrayAdapter<Order> {
+
+		public MyListAdapter() {
+			super(getActivity(), R.layout.activity_order_unsent, lista);
+		}
+
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) {
+			View view = convertView;
+			if (view == null) {
+				//
+				view = getActivity().getLayoutInflater().inflate(R.layout.row_order, parent,false);
+			}
+			Order order = lista.get(position);
+			ImageView image_operation = (ImageView) view.findViewById(R.id.img_estado_cliente);
+			image_operation.setImageResource(order.getIcon());
+
+			TextView lbl_name = (TextView) view.findViewById(R.id.lbl_numero_pedido);
+			lbl_name.setText(order.getNumber());
+
+			TextView lbl_address = (TextView) view.findViewById(R.id.lbl_fecha_pedido);
+			lbl_address.setText(order.getNombre_cliente());
+
+			TextView lbl_total = (TextView) view.findViewById(R.id.lbl_total);
+			lbl_total.setText(order.getDate()+"- Total: "+order.getTotal()+" - Items:"+order.getItem());
+			return view;
+		}
+
+	}
+
+	
+
+}

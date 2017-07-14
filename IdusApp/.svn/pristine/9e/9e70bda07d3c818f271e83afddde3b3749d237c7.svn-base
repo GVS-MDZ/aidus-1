@@ -1,0 +1,66 @@
+package com.gvs.conectoras;
+
+import java.io.DataInputStream;
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.sqlite.SQLiteDatabase;
+import com.gvs.entidades.Configuracion;
+import com.gvs.exceptiones.ConectorException;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+import com.gvs.utilidades.Order;
+
+public class ConectorCheckPedido extends ConectorGeneral{
+
+	int nVendedor;
+	Order pedido;
+	Context conte;
+	int lEmpresa;
+	int lVendedor;
+	private Funciones funcion = new Funciones();
+	
+	public ConectorCheckPedido(Configuracion conf, Context cont, Order pedidoOri,int empresa, int vendedor) {
+		super(conf);
+		conte=cont;
+		pedido=pedidoOri;
+		lEmpresa=empresa;
+		lVendedor=vendedor;
+	}
+
+	@Override
+	protected String CompletarURL() throws ConectorException {
+		try {
+			String strURL ="VerificarPedido?numero="+pedido.getNumber()+"&empresa="+lEmpresa;
+			return strURL;
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new ConectorException(e.getMessage());
+		}
+	}
+
+	@Override
+	protected void procesarRespuesta(DataInputStream in)throws ConectorException {
+		int tipoDeDato=0;		
+		try {
+			while (true){
+				BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+				final SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+				ContentValues cont = new ContentValues();
+				tipoDeDato = in.readInt();
+				if (tipoDeDato==0){
+					
+					break;
+				}else if (tipoDeDato==1){
+					cont.clear();
+					int numeroOriginal = in.readInt();
+					cont.put("NUMEROFINAL", 0);
+					cont.put("ESTADO",0);
+					db.update("PEDIDOSCABECERA", cont, "NUMERO=" + numeroOriginal + " AND (ESTADO=1)", null);					
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new ConectorException(e.getMessage());
+		}
+	}
+	}

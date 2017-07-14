@@ -1,0 +1,13 @@
+package com.gvs.exceptiones;
+
+public class ExceptionNoAtendido extends Exception {
+	private static final long serialVersionUID = 1L;
+
+	public ExceptionNoAtendido() {
+
+	}
+
+	public ExceptionNoAtendido(String msg) {
+		super(msg);
+	}
+}

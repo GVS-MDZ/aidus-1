@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<qualifiedTypeNameHistroy>
+<fullyQualifiedTypeName name="java.nio.channels.spi.AbstractInterruptibleChannel"/>
+<fullyQualifiedTypeName name="org.apache.http.impl.io.AbstractSessionInputBuffer"/>
+<fullyQualifiedTypeName name="com.gvs.idusapp.BusquedaArticuloActivity"/>
+<fullyQualifiedTypeName name="com.gvs.controladores.ControladorNoAtendido"/>
+<fullyQualifiedTypeName name="com.gvs.idusapp.SincronizadorActivity"/>
+<fullyQualifiedTypeName name="com.gvs.idusapp.DescripcionPedidoActivity"/>
+<fullyQualifiedTypeName name="com.gvs.idusapp.PedidoNoEnviadoActivity"/>
+<fullyQualifiedTypeName name="com.gvs.idusapp.MenuClienteActivity"/>
+<fullyQualifiedTypeName name="com.gvs.idusapp.PedidoClienteActivity"/>
+<fullyQualifiedTypeName name="android.text.InputFilter.LengthFilter"/>
+<fullyQualifiedTypeName name="android.widget.Toast"/>
+<fullyQualifiedTypeName name="com.gvs.modelos.Vendedor"/>
+<fullyQualifiedTypeName name="com.gvs.idusapp.RealizarPedidoActivity"/>
+<fullyQualifiedTypeName name="java.lang.Integer"/>
+<fullyQualifiedTypeName name="java.util.List"/>
+<fullyQualifiedTypeName name="java.util.ArrayList"/>
+<fullyQualifiedTypeName name="android.util.Log"/>
+<fullyQualifiedTypeName name="android.content.ContentValues"/>
+<fullyQualifiedTypeName name="com.gvs.controladores.ControladorConfiguracion"/>
+<fullyQualifiedTypeName name="android.database.sqlite.SQLiteDatabase"/>
+<fullyQualifiedTypeName name="com.gvs.modelos.ListaPrecio"/>
+</qualifiedTypeNameHistroy>

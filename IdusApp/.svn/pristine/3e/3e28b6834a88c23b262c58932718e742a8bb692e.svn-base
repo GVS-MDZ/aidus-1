@@ -1,0 +1,200 @@
+package com.gvs.entidades;
+
+import android.os.Parcel;
+import android.os.Parcelable;
+
+public class Order  implements Parcelable {
+	private String number;
+	private String number_final;
+	private String date;
+	private String item;
+	private int icon;
+	private String nombre_cliente;
+	private double total;
+	
+	private int avance;
+	private int codigoCliente;
+	private int codigoVendedor;
+	private String internet;
+	private String latitud;
+	private String longitud;
+	private String precision;
+	private String provee;
+	private String Observacion;
+	private long fechaEntrega;
+	private long fechaEnviado;
+	private int estado;
+
+	public String getNumber() {
+		return number;
+	}
+
+	public void setNumber(String number) {
+		this.number = number;
+	}
+	
+
+	public long getFechaEnviado() {
+		return fechaEnviado;
+	}
+
+	public void setFechaEnviado(long fechaEnviado) {
+		this.fechaEnviado = fechaEnviado;
+	}
+
+	public String getNumber_final() {
+		return number_final;
+	}
+
+	public void setNumber_final(String number_final) {
+		this.number_final = number_final;
+	}
+
+	public String getItem() {
+		return item;
+	}
+
+	public void setItem(String item) {
+		this.item = item;
+	}
+
+	public String getDate() {
+		return date;
+	}
+
+	public void setDate(String date) {
+		this.date = date;
+	}
+
+	public int getIcon() {
+		return icon;
+	}
+
+	public void setIcon(int icon) {
+		this.icon = icon;
+	}
+
+	public String getNombre_cliente() {
+		return nombre_cliente;
+	}
+
+	public void setNombre_cliente(String nombre_cliente) {
+		this.nombre_cliente = nombre_cliente;
+	}
+
+	public double getTotal() {
+		return total;
+	}
+
+	public void setTotal(double total) {
+		this.total = total;
+	}
+
+	public int getAvance() {
+		return avance;
+	}
+
+	public void setAvance(int avance) {
+		this.avance = avance;
+	}
+
+	public int getCodigoCliente() {
+		return codigoCliente;
+	}
+
+	public void setCodigoCliente(int codigoCliente) {
+		this.codigoCliente = codigoCliente;
+	}
+
+	public int getCodigoVendedor() {
+		return codigoVendedor;
+	}
+
+	public void setCodigoVendedor(int codigoVendedor) {
+		this.codigoVendedor = codigoVendedor;
+	}
+
+	public String getInternet() {
+		return internet;
+	}
+
+	public void setInternet(String internet) {
+		this.internet = internet;
+	}
+
+	public String getLatitud() {
+		return latitud;
+	}
+
+	public void setLatitud(String latitud) {
+		this.latitud = latitud;
+	}
+
+	public String getLongitud() {
+		return longitud;
+	}
+
+	public void setLongitud(String longitud) {
+		this.longitud = longitud;
+	}
+
+	public String getPrecision() {
+		return precision;
+	}
+
+	public void setPrecision(String precision) {
+		this.precision = precision;
+	}
+
+	public String getProvee() {
+		return provee;
+	}
+
+	public void setProvee(String provee) {
+		this.provee = provee;
+	}
+
+	public String getObservacion() {
+		return Observacion;
+	}
+
+	public void setObservacion(String observacion) {
+		Observacion = observacion;
+	}
+
+	public long getFechaEntrega() {
+		return fechaEntrega;
+	}
+
+	public void setFechaEntrega(long fechaEntrega) {
+		this.fechaEntrega = fechaEntrega;
+	}
+
+	public int getEstado() {
+		return estado;
+	}
+
+	public void setEstado(int estado) {
+		this.estado = estado;
+	}
+
+	@Override
+	public int describeContents() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public void writeToParcel(Parcel dest, int flags) {
+		// TODO Auto-generated method stub
+		
+	}
+	
+	/**/
+	
+	
+	
+	
+	
+
+}

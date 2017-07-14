@@ -1,0 +1,40 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+    <TextView
+        android:id="@+id/lbl_cliente"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#2f2d2e"
+        android:gravity="center"
+        android:paddingBottom="10dp"
+        android:paddingTop="10dp"
+        android:text=""
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <View
+        android:layout_width="fill_parent"
+        android:layout_height="2dp"
+        android:background="#502b70" />
+
+    <ListView
+        android:id="@+id/lista_historico_cliente"
+        android:layout_width="match_parent"
+        android:layout_height="330dp"
+        android:layout_weight="1.24" >
+    </ListView>
+
+    <Button
+        android:id="@+id/btn_enviar2"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:background="@anim/btn_ingresar"
+        android:text="Enviar"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold" />
+
+</LinearLayout>

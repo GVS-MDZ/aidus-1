@@ -1,0 +1,78 @@
+package com.gvs.busquedas;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+
+import com.gvs.entidades.Configuracion;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.Funciones;
+
+public class BusquedaConfiguracion {
+	private Context conte;
+	private Funciones funcion = new Funciones();
+	
+	public BusquedaConfiguracion(Context cont){
+		conte=cont;
+	}
+	
+	public Configuracion buscarConfiguracion(){
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte,funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		String sql = "SELECT * FROM CONFIGURACION";
+		Cursor cur = db.rawQuery(sql, null);
+		Configuracion configuracion=null;
+		if (cur.moveToNext()) {
+			configuracion=new Configuracion();
+			configuracion.setNombreSrv(cur.getString(cur.getColumnIndex("NOMBRESRV")));
+			configuracion.setPuerto(Integer.parseInt(cur.getString(cur.getColumnIndex("PUERTO"))));
+			configuracion.setCantidadItems(Integer.parseInt(cur.getString(cur.getColumnIndex("CANTIDADITEMS"))));
+			configuracion.setDiaCompleto(cur.getInt(cur.getColumnIndex("DIACOMPLETO")));
+			configuracion.setMuestraSugeridos(cur.getInt(cur.getColumnIndex("MUESTRASUGERIDOS")));
+			configuracion.setServicioGeo(cur.getInt(cur.getColumnIndex("SERVICIOGEO")));
+			configuracion.setOtroDia(cur.getInt(cur.getColumnIndex("OTRODIA")));
+			configuracion.setDescuento(cur.getInt(cur.getColumnIndex("DESCUENTO")));
+			configuracion.setAiuds(cur.getInt(cur.getColumnIndex("AIDUS")));
+			configuracion.setControl_deuda(cur.getInt(cur.getColumnIndex("CONTROLDEUDA")));
+			configuracion.setDia_contol(cur.getInt(cur.getColumnIndex("DIASCONTROL")));
+		}
+		return configuracion;
+	}
+
+	public void guardarConfiguracion(Configuracion configuracion){
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(), null, funcion.Version());
+		SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		ContentValues cont = new ContentValues();
+		String sql = "SELECT * FROM CONFIGURACION";
+		Cursor cur = db.rawQuery(sql, null);
+		if (cur.moveToNext()) {
+			cont.put("NOMBRESRV",configuracion.getNombreSrv() );
+			cont.put("PUERTO",configuracion.getPuerto());
+			cont.put("DIACOMPLETO",configuracion.getDiaCompleto());
+			cont.put("MUESTRASUGERIDOS",configuracion.getMuestraSugeridos());
+			cont.put("SERVICIOGEO", configuracion.getServicioGeo());
+			cont.put("OTRODIA",configuracion.getOtroDia() );
+			cont.put("CANTIDADITEMS", configuracion.getCantidadItems());
+			cont.put("DESCUENTO",configuracion.getDescuento());
+			db.update("CONFIGURACION", cont, "", null);
+		} else {
+			cont.put("NOMBRESRV",configuracion.getNombreSrv() );
+			cont.put("PUERTO",configuracion.getPuerto());
+			cont.put("DIACOMPLETO",configuracion.getDiaCompleto());
+			cont.put("MUESTRASUGERIDOS",configuracion.getMuestraSugeridos());
+			cont.put("SERVICIOGEO", configuracion.getServicioGeo());
+			cont.put("OTRODIA",configuracion.getOtroDia() );
+			cont.put("CANTIDADITEMS", configuracion.getCantidadItems());
+			cont.put("DESCUENTO",configuracion.getDescuento());
+			db.insert("CONFIGURACION", null, cont);
+		}
+	}
+	
+	public void modificarConfiguracionCenector(Configuracion configuracion){
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte,funcion.BaseDeDatos(), null, funcion.Version());
+	    SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		String Sql = "UPDATE CONFIGURACION SET AIDUS="+ configuracion.getAiuds()+",CONTROLDEUDA="+configuracion.getControl_deuda()+",DIASCONTROL="+configuracion.getDia_contol();
+		db.execSQL(Sql);
+	}
+}

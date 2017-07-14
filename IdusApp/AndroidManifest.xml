@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.gvs.idusapp"
+    android:versionCode="1"
+    android:versionName="6.0" >
+
+    <uses-sdk
+        android:minSdkVersion="16"
+        android:targetSdkVersion="16" />
+
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.FLASHLIGHT" />
+
+    <permission android:name="com.gvs.idusapp.permission.MAPS_RECEIVE" android:protectionLevel="signature" />
+
+    <uses-permission android:name="com.gvs.idusapp.permission.MAPS_RECEIVE" />
+
+    <uses-feature android:glEsVersion="0x00020000" android:required="true" />
+    <uses-feature android:name="android.hardware.camera" />
+    <uses-feature android:name="android.hardware.camera.front"/>
+    <uses-feature android:name="android.hardware.camera.autofocus" />
+    <uses-feature android:name="android.hardware.camera.flash" />
+
+    <application
+    	android:largeHeap="true"
+        android:allowBackup="true"          
+   		 android:hardwareAccelerated="true"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/AppTheme" >
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
+
+        <meta-data android:name="com.google.android.maps.v2.API_KEY" android:value="AIzaSyAhWW7h1QLa3aF_VVEH6ejMPzY1jkUhXgY" />
+       
+        
+        <activity
+            android:name=".MainActivity"
+            android:label="@string/app_name" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".VersionActivity"
+            android:label="@string/title_activity_version" >
+        </activity>
+        <activity
+            android:name=".LoginActivity"
+            android:label="@string/title_activity_login" >
+        </activity>
+        <activity
+            android:name=".ConfigurationActivity"
+            android:label="@string/title_activity_configuration" >
+        </activity>
+        <activity
+            android:name=".SincronizadorActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:label="@string/title_activity_sync" >
+        </activity>
+        <activity
+            android:name=".MenuDiaActivity"
+            android:label="@string/title_activity_work_day" >
+        </activity>
+        <activity
+            android:name=".LoginAdministratorActivity"
+            android:label="@string/title_activity_login_administrator" >
+        </activity>
+        <activity
+            android:name=".ResumenActivity"
+            android:label="@string/title_activity_tab_general" >
+        </activity>
+        <activity
+            android:name=".ObjetivoVisitaActivity"
+            android:label="@string/title_activity_tab_general" >
+        </activity>
+        <activity
+            android:name=".PedidosDiariosActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:label="@string/title_order_day" >
+        </activity>
+        <activity
+            android:name=".TabGeneralActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:label="@string/title_activity_tab_general" >
+        </activity>
+        <activity
+            android:name=".VentasMensualesActivity"
+            android:label="@string/title_activity_sales_period" >
+        </activity>
+        <activity
+            android:name=".ClienteActivity"
+            android:label="@string/title_activity_client" >
+        </activity>
+        <activity
+            android:name=".TabCierreDiaActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:label="@string/title_activity_tab_close_day" >
+        </activity>
+        <activity
+            android:name=".CierreDiaActivity"
+            android:label="@string/title_activity_tab_close_day" >
+        </activity>
+        <activity
+            android:name=".PedidoNoEnviadoActivity"
+            android:label="@string/title_activity_tab_close_day" >
+        </activity>
+        <activity
+            android:name=".MenuClienteActivity"
+            android:label="@string/title_activity_client_operation" >
+        </activity>
+        <activity
+            android:name=".InformacionClienteActivity"
+            android:label="@string/title_activity_customer_information" >
+        </activity>
+        <activity
+            android:name=".MotivoNoVentaActivity"
+            android:label="@string/title_activity_motive" >
+        </activity>
+        <activity
+            android:name=".EncuestaActivity"
+            android:label="@string/title_activity_question" >
+        </activity>
+        <activity
+            android:name=".PreguntaEncuestaActivity"
+            android:label="@string/title_activity_answer_question" >
+        </activity>
+        <activity
+            android:name=".PedidoClienteActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:label="@string/title_activity_order_client" >
+        </activity>
+        <activity
+            android:name=".ItemPedidoActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:label="@string/title_activity_order_detail" >
+        </activity>
+        <activity
+            android:name=".RealizarPedidoActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:label="@string/title_activity_realize_order" >
+        </activity>
+        <activity
+            android:name=".BusquedaArticuloActivity"
+            android:label="@string/title_activity_search_article" >
+        </activity>
+        <activity
+            android:name=".DescripcionPedidoActivity"
+            android:label="@string/title_activity_order_detail_final" >
+        </activity>
+        <activity
+            android:name=".ComprobanteActivity"
+            android:label="@string/title_activity_voucher_client" >
+        </activity>
+        <activity
+            android:name=".LanzamientoActivity"
+            android:label="@string/title_activity_article_launch" >
+        </activity>
+        <activity
+            android:name=".ImpresindibleActivity"
+            android:label="@string/title_activity_article_indispensable" >
+        </activity>
+        <activity
+            android:name=".SugeridoActivity"
+            android:label="@string/title_activity_article_suggested" >
+        </activity>
+        <activity
+            android:name=".SyncOrderActivity"
+            android:label="@string/title_activity_sync_order" >
+        </activity>
+        <activity
+            android:name=".LoadingActivity"
+            android:label="@string/title_activity_loading" >
+        </activity>
+        <activity
+            android:name=".MapaClientesActivity"
+            android:label="@string/title_activity_client_map" >
+        </activity>
+        <activity
+            android:name=".GpsClienteActivity"
+            android:label="@string/title_activity_gps_client" >
+        </activity>
+        <activity
+            android:name=".PedidoMailActivity"
+            android:label="@string/title_activity_order_mail" >
+        </activity>
+        <activity
+            android:name=".AnalyticActivity"
+            android:label="@string/title_activity_analytic"
+            android:theme="@android:style/Theme.Dialog">
+        </activity>
+        <activity
+            android:name=".CamaraActivity"
+            android:label="@string/title_activity_camera" >
+        </activity>
+        <activity
+            android:name=".FotoActivity"
+            android:label="@string/title_activity_view_photo" >
+        </activity>
+    </application>
+
+</manifest>

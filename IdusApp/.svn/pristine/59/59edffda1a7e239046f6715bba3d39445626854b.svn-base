@@ -1,0 +1,712 @@
+package com.gvs.conectoras;
+
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Date;
+
+import android.app.AlertDialog;
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+
+import com.gvs.entidades.Configuracion;
+import com.gvs.exceptiones.ConectorException;
+import com.gvs.utilidades.BaseDeDatos;
+import com.gvs.utilidades.DetectorDeConexion;
+import com.gvs.utilidades.Funciones;
+
+public class ConectorActualizacion extends ConectorGeneral {
+
+	private int lEmpresa;
+	private int lVendedor;
+	private Context conte;
+	private String stop;
+
+	public ConectorActualizacion(Configuracion conf, int empresa, int vendedor,
+			Context context) {
+		super(conf);
+		lEmpresa = empresa;
+		lVendedor = vendedor;
+		conte = context;
+	}
+
+	@Override
+	protected String CompletarURL() {
+		return "buscarActualizaciones?empresa=" + lEmpresa + "&vendedor="
+				+ lVendedor;
+	}
+
+	@Override
+	protected void procesarRespuesta(DataInputStream in)
+			throws ConectorException {
+		int tipoActualizacion = 0;
+		boolean bucle = true;
+		boolean yaBorreClientes = false;
+		boolean yaBorreVisitas = false;
+		boolean yaBorreVtaDia = false;
+		boolean yaBorreObjVis = false;
+		boolean yaBorreArtIns = false;
+		boolean yaBorreArtLan = false;
+		boolean yaBorreEncuestas = false;
+		boolean yaBorreComprobantes = false;
+		boolean yaBorreComprobantesValidacion = false;
+		Funciones funcion = new Funciones();
+		BaseDeDatos baseDeDatos = new BaseDeDatos(conte, funcion.BaseDeDatos(),
+				null, funcion.Version());
+		final SQLiteDatabase db = baseDeDatos.getReadableDatabase();
+		ContentValues cont = new ContentValues();
+		Cursor cur;
+		// String error="";
+		ArrayList<String> lista_actualizaciones = new ArrayList<String>();
+		try {
+			db.beginTransaction();
+			while (bucle) {
+				try {
+					lista_actualizaciones.add(in.readUTF());
+				} catch (Exception e) {
+					bucle = false;
+				}
+			}
+			in.close();
+
+			for (String item_actualizacion : lista_actualizaciones) {
+				try {
+					String[] item = item_actualizacion.split("&&");
+					tipoActualizacion = Integer.parseInt(item[0]);
+					// error=item[1];
+					String Sql = "";
+					switch (tipoActualizacion) {
+					case 1001:
+						String[] item_1001 = item[1].split(";");
+						cont.clear();
+						cont.put("CODIGOEMPRESA", lEmpresa);
+						cont.put("CODIGO", item_1001[0]);
+						cont.put("NOMBRE", item_1001[1]);
+						cont.put("PASS", Integer.parseInt(item_1001[2]));
+						cont.put("COBREGULAR", Integer.parseInt(item_1001[3]));
+						cont.put("COBBUENA", Integer.parseInt(item_1001[4]));
+						cont.put("COBMUYBUENA", Integer.parseInt(item_1001[5]));
+						Sql = "SELECT * FROM VENDEDOR WHERE CODIGOEMPRESA="
+								+ lEmpresa + " AND CODIGO="
+								+ cont.getAsInteger("CODIGO");
+						cur = db.rawQuery(Sql, null);
+						if (cur.moveToNext()) {
+							db.update(
+									"VENDEDOR",
+									cont,
+									"CODIGOEMPRESA=" + lEmpresa
+											+ " AND CODIGO="
+											+ cont.getAsInteger("CODIGO"), null);
+						} else {
+							db.insert("VENDEDOR", null, cont);
+						}
+						if (cur != null) {
+							cur.close();
+						}
+
+						break;
+
+					case 1002:
+							String[] item_1002 = item[1].split(";");
+							cont.clear();
+							cont.put("CODIGO", Integer.parseInt(item_1002[0]));
+							cont.put("CODIGORUBRO", Integer.parseInt(item_1002[1]));
+							cont.put("CODIGOSUBRUBRO", Integer.parseInt(item_1002[2]));
+							cont.put("CODIGOARTICULO", item_1002[3]);
+							cont.put("PORCENTAJE", Double.parseDouble(item_1002[4]));
+							cont.put("HAB", devolverBoolean(Boolean.parseBoolean(item_1002[5])));
+							Sql = "SELECT * FROM LISTASPRECIO WHERE CODIGO=" + cont.getAsInteger("CODIGO") + " AND CODIGORUBRO=" + cont.getAsInteger("CODIGORUBRO")
+									+ " AND CODIGOSUBRUBRO=" + cont.getAsInteger("CODIGOSUBRUBRO");
+							cur = db.rawQuery(Sql, null);
+							if (cur.moveToNext()) {
+								db.update("LISTASPRECIO", cont, "CODIGO=" + cont.getAsInteger("CODIGO")
+												+ " AND CODIGORUBRO=" + cont.getAsInteger("CODIGORUBRO")
+												+ " AND CODIGOSUBRUBRO=" + cont.getAsInteger("CODIGOSUBRUBRO"),	null);
+							} else {
+								db.insert("LISTASPRECIO", null, cont);
+							}
+							if (cur != null) {
+								cur.close();
+							}
+							break;
+					case 1003:
+						if (yaBorreClientes == false) {
+							Sql = "DELETE FROM CLIENTES";
+							db.execSQL(Sql);
+							yaBorreClientes = true;
+						}
+							String[] item_1003 = item[1].split(";");							
+							cont.clear();
+							cont.put("CODIGO", Integer.parseInt(item_1003[0]));
+							cont.put("NOMBRE", item_1003[1]);
+							cont.put("DOMICILIO", item_1003[2]);
+							cont.put("TELEFONO", item_1003[3]);
+							cont.put("PROVINCIA", item_1003[4]);
+							cont.put("LOCALIDAD", item_1003[5]);
+							cont.put("OBSERVACIONES", item_1003[6]);
+							cont.put("CODIGOLISTAPRECIO", Integer.parseInt(item_1003[7]));
+							cont.put("SALDO", Double.parseDouble(item_1003[8]));
+							cont.put("CODIGOVENDEDOR", lVendedor);
+							cont.put("HAB", devolverBoolean(Boolean.parseBoolean(item_1003[9])));
+							cont.put("CANAL", item_1003[10]);
+							int codigoResponsabilidad = Integer.parseInt(item_1003[11]);
+							String responsabilidad = "";
+							switch (codigoResponsabilidad) {
+							case 0: {
+								responsabilidad = "SIN RESPONSABILIDAD";
+								break;
+							}
+							case 1: {
+								responsabilidad = "RESPONSABLE INSCRIPTO";
+								break;
+							}
+							case 2: {
+								responsabilidad = "RESPONSABLE NO INSCRIPTO";
+								break;
+							}
+							case 3: {
+								responsabilidad = "CONSUMIDOR FINAL";
+								break;
+							}
+							case 4: {
+								responsabilidad = "EXENTO";
+								break;
+							}
+							case 5: {
+								responsabilidad = "MONOTRIBUTO";
+								break;
+							}
+							}
+							cont.put("RESPONSABILIDAD", responsabilidad);
+							cont.put("LATITUD", Double.parseDouble(item_1003[12]));
+							cont.put("LONGITUD", Double.parseDouble(item_1003[13]));
+							cont.put("HABILITARGPS", item_1003[14]);
+							cont.put("EDITADO", 0);
+							Sql = "SELECT * FROM CLIENTES WHERE CODIGO="
+									+ cont.getAsInteger("CODIGO");
+							cur = db.rawQuery(Sql, null);
+							if (cur.moveToNext()) {
+								db.update(
+										"CLIENTES",
+										cont,
+										"CODIGO=" + cont.getAsInteger("CODIGO"),
+										null);
+							} else {
+								db.insert("CLIENTES", null, cont);
+							}
+							if (cur != null) {
+								cur.close();
+							}
+						break;
+					case 1004:
+						String[] item_1004 = item[1].split(";");
+						cont.clear();
+						cont.put("DIAS", item_1004[0]);
+						cont.put("HORA", item_1004[1]);
+						cont.put("ORDEN", Integer.parseInt(item_1004[2]));
+						cont.put("CODIGOCLIENTE", Integer.parseInt(item_1004[3]));
+						if (yaBorreVisitas == false) {
+							Sql = "DELETE FROM VISITAS";
+							db.execSQL(Sql);
+							yaBorreVisitas = true;
+						}
+						Sql = "SELECT * FROM VISITAS WHERE CODIGOCLIENTE="
+								+ cont.getAsInteger("CODIGOCLIENTE");
+						cur = db.rawQuery(Sql, null);
+						if (cur.moveToNext()) {
+							db.update(
+									"VISITAS",
+									cont,
+									"CODIGOCLIENTE="
+											+ cont.getAsInteger("CODIGOCLIENTE"),
+									null);
+						} else {
+							db.insert("VISITAS", null, cont);
+						}
+						if (cur != null) {
+							cur.close();
+						}
+						cur.close();
+						break;
+					case 1005:
+						String[] item_1005 = item[1].split(";");
+						cont.clear();
+						cont.put("CODIGO", Integer.parseInt(item_1005[0]));
+						cont.put("NOMBRE", item_1005[1]);
+						cont.put("HAB", devolverBoolean(Boolean
+								.parseBoolean(item_1005[2])));
+						Sql = "SELECT * FROM RUBROS WHERE CODIGO="
+								+ cont.getAsInteger("CODIGO");
+						cur = db.rawQuery(Sql, null);
+						if (cur.moveToNext()) {
+							db.update("RUBROS", cont,
+									"CODIGO=" + cont.getAsInteger("CODIGO"),
+									null);
+						} else {
+							db.insert("RUBROS", null, cont);
+						}
+						if (cur != null) {
+							cur.close();
+						}
+						break;
+					case 1006:
+						String[] item_1006 = item[1].split(";");
+						cont.clear();
+						cont.put("CODIGORUBRO", Integer.parseInt(item_1006[0]));
+						cont.put("CODIGO", Integer.parseInt(item_1006[1]));
+						cont.put("NOMBRE", item_1006[2]);
+						cont.put("CONTROLASTOCK", devolverBoolean(Boolean
+								.parseBoolean(item_1006[3])));
+						cont.put("HAB", devolverBoolean(Boolean
+								.parseBoolean(item_1006[4])));
+						Sql = "SELECT * FROM SUBRUBROS WHERE CODIGO="
+								+ cont.getAsInteger("CODIGO")
+								+ " AND CODIGORUBRO="
+								+ cont.getAsInteger("CODIGORUBRO");
+						cur = db.rawQuery(Sql, null);
+						if (cur.moveToNext()) {
+							db.update(
+									"SUBRUBROS",
+									cont,
+									"CODIGO=" + cont.getAsInteger("CODIGO")
+											+ " AND CODIGORUBRO="
+											+ cont.getAsInteger("CODIGORUBRO"),
+									null);
+						} else {
+							db.insert("SUBRUBROS", null, cont);
+						}
+						if (cur != null) {
+							cur.close();
+						}
+						break;
+					case 1007:
+						String[] item_1007 = item[1].split(";");
+						cont.clear();
+						cont.put("CODIGO", item_1007[0]);
+						cont.put("CODIGORUBRO", Integer.parseInt(item_1007[1]));
+						cont.put("CODIGOSUBRUBRO",
+								Integer.parseInt(item_1007[2]));
+						cont.put("NOMBRE", item_1007[3]);
+						cont.put("PRECIO", Double.parseDouble(item_1007[4]));
+						cont.put("EXISTENCIA", Double.parseDouble(item_1007[5]));
+						cont.put("HAB", devolverBoolean(Boolean
+								.parseBoolean(item_1007[6])));
+						cont.put("MULTIPLO", Integer.parseInt(item_1007[7]));
+						cont.put("PRECIOOFERTA",
+								Double.parseDouble(item_1007[8]));
+						Sql = "SELECT * FROM ARTICULOS WHERE CODIGO='"
+								+ cont.getAsString("CODIGO") + "'";
+						cur = db.rawQuery(Sql, null);
+						if (cur.moveToNext()) {
+							db.update("ARTICULOS", cont,
+									"CODIGO='" + cont.getAsString("CODIGO")
+											+ "'", null);
+						} else {
+							db.insert("ARTICULOS", null, cont);
+						}
+						if (cur != null) {
+							cur.close();
+						}
+						break;
+					case 1008:
+						String[] item_1008 = item[1].split(";");
+						cont.clear();
+						cont.put("CODIGO", Integer.parseInt(item_1008[0]));
+						cont.put("NOMBRE", item_1008[1]);
+						Sql = "SELECT * FROM MOTIVOS WHERE CODIGO="
+								+ cont.getAsInteger("CODIGO");
+						cur = db.rawQuery(Sql, null);
+						if (cur.moveToNext()) {
+							db.update("MOTIVOS", cont,
+									"CODIGO=" + cont.getAsInteger("CODIGO"),
+									null);
+						} else {
+							db.insert("MOTIVOS", null, cont);
+						}
+						if (cur != null) {
+							cur.close();
+						}
+						break;
+					case 1009:
+						String[] item_1009 = item[1].split(";");
+						cont.clear();
+						cont.put("ORDEN", Integer.parseInt(item_1009[0]));
+						cont.put("CODIGOARTICULO", item_1009[1]);
+						cont.put("MENSAJE", item_1009[2]);
+						cont.put("VENCIMIENTO", Long.parseLong(item_1009[3]));
+						cont.put("EXIGIBLE", devolverBoolean(Boolean
+								.parseBoolean(item_1009[4])));
+						Sql = "SELECT * FROM SUGERIDOS WHERE CODIGOARTICULO='"
+								+ cont.getAsString("CODIGOARTICULO") + "'";
+						cur = db.rawQuery(Sql, null);
+						if (cur.moveToNext()) {
+							db.update("SUGERIDOS", cont, "CODIGOARTICULO='"
+									+ cont.getAsString("CODIGOARTICULO") + "'",
+									null);
+						} else {
+							db.insert("SUGERIDOS", null, cont);
+						}
+						if (cur != null) {
+							cur.close();
+						}
+						break;
+					case 1010:
+						String[] item_1010 = item[1].split(";");
+						cont.clear();
+						int cantidadItems = Integer.parseInt(item_1010[0]);
+						if (cantidadItems == 0) {
+							cantidadItems = 25;
+						}
+						cont.put("CANTIDADITEMS", cantidadItems);
+						Sql = "UPDATE CONFIGURACION SET CANTIDADITEMS="
+								+ cantidadItems;
+						db.execSQL(Sql);
+						break;
+					case 1011:
+						String[] item_1011 = item[1].split(";");
+						cont.clear();
+						cont.put("NUMERO", Integer.parseInt(item_1011[0]));
+						cont.put("NUMEROFINAL", 0);
+						cont.put("FECHA", new Date().getTime());
+						cont.put("AVANCE", 0);
+						cont.put("CODIGOCLIENTE", -1);
+						cont.put("CODIGOVENDEDOR", 0);
+						cont.put("CANTIDADITEMS", 0);
+						cont.put("ESTADO", 0);
+						cont.put("FECHAENVIADO", 0);
+						cont.put("LATITUD", 0);
+						cont.put("LONGITUD", 0);
+						cont.put("PRECISION", 0);
+						cont.put("PROVEE", "");
+						cont.put("INTERNET",
+								new DetectorDeConexion(conte).estadoRedes());
+						Sql = "SELECT * FROM PEDIDOSCABECERA WHERE CODIGOCLIENTE=-1";
+						cur = db.rawQuery(Sql, null);
+						if (cur.moveToNext()) {
+							db.update("PEDIDOSCABECERA", cont,
+									" CODIGOCLIENTE=-1", null);
+						} else {
+							db.insert("PEDIDOSCABECERA", null, cont);
+						}
+						if (cur != null) {
+							cur.close();
+						}
+						break;
+					case 1012:
+						if (yaBorreArtIns == false) {
+							String sqlB = "DELETE FROM ARTINDISPENSABLES";
+							db.execSQL(sqlB);
+							yaBorreArtIns = true;
+						}
+						String[] item_1012 = item[1].split(";");
+						cont.clear();
+						// valido que la cantidad venta sea menor que la
+						// cantidad objetivo
+						if (Double.parseDouble(item_1012[3]) < Double
+								.parseDouble(item_1012[2])) {
+							cont.put("CODIGOCLIENTE",
+									Integer.parseInt(item_1012[0]));
+							cont.put("CODIGOARTICULO", item_1012[1]);
+							cont.put("CANTIDADOBJ",
+									Double.parseDouble(item_1012[2]));
+							cont.put("CANTIDADVTA",
+									Double.parseDouble(item_1012[3]));
+							cont.put("ACTUALIZACION", new Date().getTime());
+							Sql = "SELECT * FROM ARTINDISPENSABLES WHERE CODIGOCLIENTE="
+									+ cont.getAsInteger("CODIGOCLIENTE")
+									+ " AND CODIGOARTICULO='"
+									+ cont.getAsString("CODIGOARTICULO") + "'";
+							cur = db.rawQuery(Sql, null);
+							if (cur.moveToNext()) {
+								db.update(
+										"ARTINDISPENSABLES",
+										cont,
+										"CODIGOCLIENTE="
+												+ cont.getAsInteger("CODIGOCLIENTE")
+												+ " AND CODIGOARTICULO='"
+												+ cont.getAsString("CODIGOARTICULO")
+												+ "'", null);
+							} else {
+								db.insert("ARTINDISPENSABLES", null, cont);
+							}
+							if (cur != null) {
+								cur.close();
+							}
+						}
+						break;
+					case 1013:
+						if (yaBorreArtLan == false) {
+							String sqlB = "DELETE FROM ARTLANZAMIENTOS";
+							db.execSQL(sqlB);
+							yaBorreArtLan = true;
+						}
+						String[] item_1013 = item[1].split(";");
+						cont.clear();
+						// valido que la cantidad venta sea menor que la
+						// cantidad objetivo
+						if (Double.parseDouble(item_1013[3]) < Double
+								.parseDouble(item_1013[2])) {
+							cont.put("CODIGOCLIENTE",
+									Integer.parseInt(item_1013[0]));
+							cont.put("CODIGOARTICULO", item_1013[1]);
+							cont.put("CANTIDADOBJ",
+									Double.parseDouble(item_1013[2]));
+							cont.put("CANTIDADVTA",
+									Double.parseDouble(item_1013[3]));
+							cont.put("ACTUALIZACION", new Date().getTime());
+							Sql = "SELECT * FROM ARTLANZAMIENTOS WHERE CODIGOCLIENTE="
+									+ cont.getAsInteger("CODIGOCLIENTE")
+									+ " AND CODIGOARTICULO='"
+									+ cont.getAsString("CODIGOARTICULO") + "'";
+							cur = db.rawQuery(Sql, null);
+							if (cur.moveToNext()) {
+								db.update(
+										"ARTLANZAMIENTOS",
+										cont,
+										"CODIGOCLIENTE="
+												+ cont.getAsInteger("CODIGOCLIENTE")
+												+ " AND CODIGOARTICULO='"
+												+ cont.getAsString("CODIGOARTICULO")
+												+ "'", null);
+							} else {
+								db.insert("ARTLANZAMIENTOS", null, cont);
+							}
+							if (cur != null) {
+								cur.close();
+							}
+						}
+						break;
+					case 1014:
+						if (yaBorreObjVis == false) {
+							String sqlB = "DELETE FROM OBJXVISITA";
+							db.execSQL(sqlB);
+							yaBorreObjVis = true;
+						}
+						String[] item_1014 = item[1].split(";");
+						cont.clear();
+						cont.put("CODIGOCLIENTE",
+								Integer.parseInt(item_1014[0]));
+						cont.put("PERIODO", item_1014[1]);
+						cont.put("VTA_ANT", Double.parseDouble(item_1014[2]));
+						cont.put("OBJ_ACT", Double.parseDouble(item_1014[3]));
+						cont.put("CAN_VIS", Integer.parseInt(item_1014[4]));
+						cont.put("VTA_ACT", Double.parseDouble(item_1014[5]));
+						cont.put("FEC_ACT", Long.parseLong(item_1014[6]));
+						cont.put("PORC", Double.parseDouble(item_1014[7]));
+						Sql = "SELECT * FROM OBJXVISITA WHERE CODIGOCLIENTE="
+								+ cont.getAsInteger("CODIGOCLIENTE")
+								+ " AND PERIODO='"
+								+ cont.getAsString("PERIODO") + "'";
+						cur = db.rawQuery(Sql, null);
+						if (cur.moveToNext()) {
+							db.update(
+									"OBJXVISITA",
+									cont,
+									"CODIGOCLIENTE="
+											+ cont.getAsInteger("CODIGOCLIENTE")
+											+ " AND PERIODO='"
+											+ cont.getAsString("PERIODO") + "'",
+									null);
+						} else {
+							db.insert("OBJXVISITA", null, cont);
+						}
+						if (cur != null) {
+							cur.close();
+						}
+						break;
+					case 1015:
+						if (yaBorreVtaDia == false) {
+							String sqlB = "DELETE FROM VENTAXPDIAS";
+							db.execSQL(sqlB);
+							yaBorreVtaDia = true;
+						}
+						String[] item_1015 = item[1].split(";");
+						cont.clear();
+						cont.put("PERIODO", item_1015[0]);
+						cont.put("DIA", Integer.parseInt(item_1015[1]));
+						cont.put("IMPORTE", Double.parseDouble(item_1015[2]));
+						cont.put("ACTUALIZACION", Long.parseLong(item_1015[3]));
+						Sql = "SELECT * FROM VENTAXPDIAS WHERE PERIODO='"
+								+ cont.getAsString("PERIODO") + "' AND DIA="
+								+ cont.getAsInteger("DIA");
+						cur = db.rawQuery(Sql, null);
+						if (cur.moveToNext()) {
+							db.update(
+									"VENTAXPDIAS",
+									cont,
+									"PERIODO='" + cont.getAsString("PERIODO")
+											+ "' AND DIA="
+											+ cont.getAsInteger("DIA"), null);
+						} else {
+							db.insert("VENTAXPDIAS", null, cont);
+						}
+						if (cur != null) {
+							cur.close();
+						}
+						break;
+					case 1016:
+						if (yaBorreEncuestas == false) {
+							String sqlB = "DELETE FROM ENCUESTACABECERA";
+							String sqlC = "DELETE FROM ENCUESTACUERPO";
+							db.execSQL(sqlB);
+							db.execSQL(sqlC);
+							yaBorreEncuestas = true;
+						}
+						String[] item_1016 = item[1].split(";");
+						cont.clear();
+						cont.put("NUMERO", Integer.parseInt(item_1016[0]));
+						cont.put("NOMBRE", item_1016[1]);
+						cont.put("FECHAINI", Long.parseLong(item_1016[2]));
+						cont.put("FECHAFIN", Long.parseLong(item_1016[3]));
+						cont.put("EXIGIBLE", devolverBoolean(Boolean
+								.parseBoolean(item_1016[4])));
+						Sql = "SELECT * FROM ENCUESTACABECERA WHERE NUMERO="
+								+ cont.getAsInteger("NUMERO");
+						cur = db.rawQuery(Sql, null);
+						if (cur.moveToNext()) {
+							db.update("ENCUESTACABECERA", cont, "NUMERO="
+									+ cont.getAsInteger("NUMERO"), null);
+						} else {
+							db.insert("ENCUESTACABECERA", null, cont);
+						}
+						if (cur != null) {
+							cur.close();
+						}
+						break;
+					case 1017:
+						String[] item_1017 = item[1].split(";");
+						cont.clear();
+						cont.put("NUMERO", Integer.parseInt(item_1017[0]));
+						cont.put("ITEM", Integer.parseInt(item_1017[1]));
+						cont.put("PREGUNTA", item_1017[2]);
+						cont.put("AYUDA", item_1017[3]);
+						Sql = "SELECT * FROM ENCUESTACUERPO WHERE NUMERO="
+								+ cont.getAsInteger("NUMERO") + " AND ITEM="
+								+ cont.getAsInteger("ITEM");
+						cur = db.rawQuery(Sql, null);
+						if (cur.moveToNext()) {
+							db.update(
+									"ENCUESTACUERPO",
+									cont,
+									"NUMERO=" + cont.getAsInteger("NUMERO")
+											+ " AND ITEM="
+											+ cont.getAsInteger("ITEM"), null);
+						} else {
+							db.insert("ENCUESTACUERPO", null, cont);
+						}
+						if (cur != null) {
+							cur.close();
+						}
+						break;
+					case 1018:
+						if (yaBorreComprobantes == false) {
+							String sqlB = "DELETE FROM COMPROBANTESVENTAS";
+							db.execSQL(sqlB);
+							yaBorreComprobantes = true;
+						}
+						String[] item_1018 = item[1].split(";");
+						cont.clear();
+						cont.put("TIPO", item_1018[0]);
+						cont.put("CLASE", item_1018[1]);
+						cont.put("SUCURSAL", Integer.parseInt(item_1018[2]));
+						cont.put("NUMERO", Integer.parseInt(item_1018[3]));
+						cont.put("FECHA", Long.parseLong(item_1018[4]));
+						cont.put("CODIGOCLIENTE",
+								Integer.parseInt(item_1018[5]));
+						cont.put("SALDO", Double.parseDouble(item_1018[6]));
+						Sql = "SELECT * FROM COMPROBANTESVENTAS WHERE TIPO='"
+								+ cont.getAsString("TIPO") + "' AND CLASE='"
+								+ cont.getAsString("CLASE") + "' AND SUCURSAL="
+								+ cont.getAsInteger("SUCURSAL")
+								+ " AND NUMERO=" + cont.getAsInteger("NUMERO");
+						cur = db.rawQuery(Sql, null);
+						if (cur.moveToNext()) {
+							db.update(
+									"COMPROBANTESVENTAS",
+									cont,
+									"TIPO='" + cont.getAsString("TIPO")
+											+ "' AND CLASE='"
+											+ cont.getAsString("CLASE")
+											+ "' AND SUCURSAL="
+											+ cont.getAsInteger("SUCURSAL")
+											+ " AND NUMERO="
+											+ cont.getAsString("NUMERO"), null);
+						} else {
+							db.insert("COMPROBANTESVENTAS", null, cont);
+						}
+						if (cur != null) {
+							cur.close();
+						}
+						break;
+					case 1019:
+						if (yaBorreComprobantesValidacion == false) {
+							String sqlB = "DELETE FROM COMPROBANTESVENTAS";
+							db.execSQL(sqlB);
+							yaBorreComprobantesValidacion = true;
+						}
+						break;
+					case 1020:
+						String[] item_1020 = item[1].split(";");
+						cont.clear();
+						cont.put("CODIGO", Integer.parseInt(item_1020[0]));
+						cont.put("CANTIDAD", Integer.parseInt(item_1020[1]));
+						Sql = "SELECT * FROM COMBOS WHERE CODIGO="
+								+ cont.getAsInteger("CODIGO");
+						cur = db.rawQuery(Sql, null);
+						if (cur.moveToNext()) {
+							db.update("COMBOS", cont,
+									"CODIGO=" + cont.getAsInteger("CODIGO"),
+									null);
+						} else {
+							db.insert("COMBOS", null, cont);
+						}
+						if (cur != null) {
+							cur.close();
+						}
+						break;
+					case 1099:
+						cont.clear();
+						Date fechaInicio = new Date();
+						cont.put("CODIGOEMPRESA", lEmpresa);
+						cont.put("CODIGOVENDEDOR", lVendedor);
+						cont.put("FECHAINICIO", fechaInicio.getTime());
+						cont.put("FECHA", new Date().getTime());
+						cont.put("MODO", "T");
+						cont.put("INTERNET",
+								new DetectorDeConexion(conte).estadoRedes());
+						cont.put("ESTADO", 0);
+						db.insert("SYNCRO", null, cont);
+						break;
+					default:
+						break;
+					}
+				} catch (Exception ex) {
+					// String er=error;
+					continue;
+				}
+			}
+			db.setTransactionSuccessful();
+		} catch (Exception e) {
+			// String er=error;
+			throw new ConectorException(e.getMessage());
+		} finally {
+			try {
+				db.endTransaction();
+				in.close();
+			} catch (IOException e) {
+				throw new ConectorException(e.getMessage());
+			}
+		}
+	}
+
+	private int devolverBoolean(boolean dato) {
+		if (dato) {
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+
+}

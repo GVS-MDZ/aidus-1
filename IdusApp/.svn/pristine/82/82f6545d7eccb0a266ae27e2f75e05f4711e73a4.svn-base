@@ -1,0 +1,45 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#ffffff"
+    android:orientation="vertical" >
+
+    <TextView
+        android:id="@+id/lbl_vendedor"
+        android:layout_width="302dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_weight="0.51"
+        android:gravity="center"
+        android:paddingTop="10dp"
+        android:text="Vendedor: 10" />
+
+    <ImageView
+        android:id="@+id/img_sincronizacion"
+        android:layout_width="228dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_weight="0.25"
+        android:contentDescription="@string/img_mondelez"
+        android:src="@drawable/sincronizacion" />
+
+    <TextView
+        android:id="@+id/lbl_actualizar"
+        android:layout_width="302dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_weight="0.51"
+        android:gravity="center"
+        android:paddingTop="10dp"
+        android:text="Existe informacion desactualizada en su aplicacion. Sincronize para mantener sus datos actualizados" />
+
+    <Button
+        android:id="@+id/btn_actualizar"
+        android:layout_width="match_parent"
+        android:layout_height="51dp"
+        android:layout_marginTop="14dp"
+        android:background="@anim/btn_ingresar"
+        android:text="Actualizar"
+        android:textColor="#FFFFFF" />
+
+</LinearLayout>
